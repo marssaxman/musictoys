@@ -5,11 +5,6 @@ from interface.console import Console
 from interface.display import Display
 from interface.waveform import Waveform
 
-class Clip:
-	def __init__(self, signal, samplerate):
-		self.signal = signal
-		self.samplerate = samplerate
-
 def view(display, viewer):
 	display.delete("all")
 	viewer.draw(display)
@@ -33,7 +28,6 @@ if __name__ == "__main__":
 		"quit": lambda: root.quit(),
 		"view": lambda viewer: display.view(viewer),
 		"Waveform": Waveform,
-		"Clip": Clip
 	}
 	console = Console(parent=window, dict=builtins)
 	# expose additional objects to the console like this:
