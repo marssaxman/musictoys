@@ -1,5 +1,3 @@
-import Tkinter as Tk
-
 class Waveform:
 	def __init__(self, signal, sample_rate):
 		self.signal = signal

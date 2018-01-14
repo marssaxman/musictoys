@@ -4,6 +4,15 @@ import Tkinter as Tk
 from interface.console import Console
 from interface.display import Display
 from interface.waveform import Waveform
+from interface.events import Events
+
+# viewer options:
+# signal, level, spectrogram, events, regions
+# base level is either a stack of one or more signals, or a spectrogram
+# level traces, events, and regions can be superimposed onto either
+# but! multiple viewers can be stacked vertically
+# and! we could have a spectral-signal base layer, too, combining a single
+# signal and its spectrogram into one colorful waveform chart
 
 def view(display, viewer):
 	display.delete("all")
@@ -28,6 +37,7 @@ if __name__ == "__main__":
 		"quit": lambda: root.quit(),
 		"view": lambda viewer: display.view(viewer),
 		"Waveform": Waveform,
+		"Events": Events,
 	}
 	console = Console(parent=window, dict=builtins)
 	# expose additional objects to the console like this:
