@@ -2,6 +2,17 @@
 
 import Tkinter as Tk
 from interface.console import Console
+from interface.display import Display
+from interface.waveform import Waveform
+
+class Clip:
+	def __init__(self, signal, samplerate):
+		self.signal = signal
+		self.samplerate = samplerate
+
+def view(display, viewer):
+	display.delete("all")
+	viewer.draw(display)
 
 if __name__ == "__main__":
 	root = Tk.Tk()
@@ -14,12 +25,15 @@ if __name__ == "__main__":
 	window.pack(fill=Tk.BOTH, expand=1)
 
 	# Make space where can draw visualizations of data about audio.
-	viewer = Tk.Canvas(window, bg="grey", height=200)
-	window.add(viewer)
+	display = Display(window, bg="grey", height=200)
+	window.add(display)
 
 	# Build the console.
 	builtins = {
-		"quit": lambda: root.quit()
+		"quit": lambda: root.quit(),
+		"view": lambda viewer: display.view(viewer),
+		"Waveform": Waveform,
+		"Clip": Clip
 	}
 	console = Console(parent=window, dict=builtins)
 	# expose additional objects to the console like this:
