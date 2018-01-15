@@ -109,8 +109,8 @@ class Console(Frame):
 
         self.scroll = Scrollbar(self, command=self.text.yview)
         self.text.config(yscrollcommand=self.scroll.set)
-        self.scroll.pack(side=RIGHT, fill=Y)
-        self.text.pack(fill=BOTH, expand=1)
+        self.scroll.pack(side=RIGHT, fill=Y, expand=False)
+        self.text.pack(side=LEFT, fill=BOTH, expand=True)
         self.text.focus()
 
         # Configurable options.

@@ -26,11 +26,15 @@ if __name__ == "__main__":
 	# The top pane holds an audio viewer.
 	# The bottom pane holds a python console.
 	window = Tk.PanedWindow(orient=Tk.VERTICAL)
-	window.pack(fill=Tk.BOTH, expand=1)
+	window.pack(fill=Tk.BOTH)
 
 	# Make space where can draw visualizations of data about audio.
-	display = Display(window, bg="grey", height=200)
-	window.add(display)
+	upperframe = Tk.Frame(window)
+	display = Display(upperframe, bg="grey", height=200)
+	xscrollbar = Tk.Scrollbar(upperframe, orient=Tk.HORIZONTAL)
+	xscrollbar.pack(side=Tk.BOTTOM, fill=Tk.X, expand=True)
+	display.pack(side=Tk.TOP, fill=Tk.BOTH, expand=True)
+	window.add(upperframe)
 
 	# Build the console.
 	builtins = {
