@@ -1,4 +1,9 @@
-import Tkinter as Tk
+import sys
+if sys.version_info[0] < 3:
+	import Tkinter as Tk
+else:
+	# The Tk interface module has a different name under Python 3.
+	import tkinter as Tk
 
 class Display(Tk.Canvas):
 	def __init__(self, parent, **kwargs):

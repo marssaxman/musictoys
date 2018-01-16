@@ -15,8 +15,14 @@ use, modify, or distribute the software for any purpose is hereby granted."""
 # TODO: blink or highlight matching brackets
 # TODO: delete the prompt when joining lines; allow a way to break lines
 
-from Tkinter import *
 import sys, string, traceback, types, __builtin__
+import sys
+if sys.version_info[0] < 3:
+	import Tkinter as Tk
+else:
+	# The Tk interface module has a different name under Python 3.
+	import tkinter as Tk
+
 
 REVISION = "$Revision: 1.4 $"
 VERSION = string.split(REVISION)[1]
