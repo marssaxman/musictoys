@@ -7,10 +7,11 @@ else:
 	# The Tk interface module has a different name under Python 3.
 	import tkinter as Tk
 
-from interface.console import Console
-from interface.display import Display
-from interface.waveform import Waveform
-from interface.events import Events
+from console import Console
+from display import Display
+from waveform import Waveform
+from events import Events
+
 
 # viewer options:
 # signal, level, spectrogram, events, regions
