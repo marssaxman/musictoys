@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 
-import Tkinter as Tk
+import sys
+if sys.version_info[0] < 3:
+	import Tkinter as Tk
+else:
+	# The Tk interface module has a different name under Python 3.
+	import tkinter as Tk
+
 from interface.console import Console
 from interface.display import Display
 from interface.waveform import Waveform
