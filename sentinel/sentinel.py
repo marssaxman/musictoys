@@ -55,5 +55,9 @@ if __name__ == "__main__":
 	#c.dict["console"] = c
 	window.add(console)
 
+	# fix tkinter's weird layout glitch
+	root.update()
+	root.geometry(root.geometry())
+
 	# Go do things until the user is bored
 	root.mainloop()

@@ -47,11 +47,11 @@ class OutputPipe:
         self.closed = 1
 
 
-class Console(Frame):
+class Console(Tk.Frame):
     def __init__(self, parent=None, dict={}, **options):
         """Construct from a parent widget, an optional dictionary to use
         as the namespace for execution, and any configuration options."""
-        Frame.__init__(self, parent)
+        Tk.Frame.__init__(self, parent)
 
         # Continuation state.
 
@@ -88,7 +88,7 @@ class Console(Frame):
 
         # The text box.
 
-        self.text = Text(self, insertontime=200, insertofftime=150)
+        self.text = Tk.Text(self, insertontime=200, insertofftime=150)
         self.text.insert("end", self.startup)
         self.text.insert("end", sys.ps1)
         self.text.bind("<Return>", self.cb_return)
@@ -113,10 +113,10 @@ class Console(Frame):
 
         # The scroll bar.
 
-        self.scroll = Scrollbar(self, command=self.text.yview)
+        self.scroll = Tk.Scrollbar(self, command=self.text.yview)
         self.text.config(yscrollcommand=self.scroll.set)
-        self.scroll.pack(side=RIGHT, fill=Y, expand=False)
-        self.text.pack(side=LEFT, fill=BOTH, expand=True)
+        self.scroll.pack(side=Tk.RIGHT, fill=Tk.Y, expand=False)
+        self.text.pack(side=Tk.LEFT, fill=Tk.BOTH, expand=True)
         self.text.focus()
 
         # Configurable options.
