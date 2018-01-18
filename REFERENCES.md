@@ -99,4 +99,44 @@
 
 <https://github.com/rembo10/headphones>
 
+<http://paris.cs.illinois.edu/pubs/king-icassp12.pdf>
+
+<http://mi.eng.cam.ac.uk/reports/svr-ftp/auto-pdf/logan_icslp98.pdf>
+
+<http://recherche.ircam.fr/equipes/analyse-synthese/peeters/ARTICLES/Peeters_2004_Springer_Summary.pdf>
+
+<https://www.semanticscholar.org/paper/Music-Instrument-Estimation-in-Polyphonic-Sound-Jiang-Wieczorkowska/73ffb1211f2659be4316b8c4707e10edf49a88e4/figure/5>
+
+<https://pdfs.semanticscholar.org/1c37/8ba51e0f7f51a150c501bc4e8c656e034101.pdf>
+
+<http://www.terasoft.com.tw/conf/ismir2014/proceedings/T097_268_Paper.pdf>
+
+<http://people.sju.edu/~rhall/Rhythms/asymmetric.pdf>
+
+<https://www.fransabsil.nl/archpdf/rhythm.pdf>
+
+<http://people.virginia.edu/~smb3u/clio/BokerMA941209.pdf>
+
+<http://www.speech.kth.se/prod/publications/files/4108.pdf>
+
+<http://karmetik.com/sites/default/files/publications/2004_icmc_snare.pdf>
+
+<https://parlab.eecs.berkeley.edu/sites/all/parlab/files/MusicApps.pdf>
+
+<http://www.ericbattenberg.com/school/percussion_extraction_ebattenberg_2008_0.pdf>
+
+<http://www.sumsar.net/papers/baath_2014_rhythm_categorization.pdf>
+
+<https://pdfs.semanticscholar.org/3d79/2cd7390eb532b72652652abe343623b7ccbb.pdf>
+
+<http://www.cs.tut.fi/sgn/arg/klap/patterns.pdf>
+
+<http://www.mirlab.org/conference_papers/International_Conference/ICASSP%202011/pdfs/0000161.pdf>
+
+<http://www.terasoft.com.tw/conf/ismir2014/proceedings/T027_311_Paper.pdf>
+
+<https://www.cs.princeton.edu/~fiebrink/publications/SinyorMcKayFiebrinkMcEnnisFujinaga_ISMIR2005.pdf>
+
+<https://parlab.eecs.berkeley.edu/sites/all/parlab/files/Live%20Drum%20Separation%20Using%20Probabilistic%20Spectral%20Clustering%20Based%20on%20the%20Itakura-Saito%20Divergence.pdf>
+
 
