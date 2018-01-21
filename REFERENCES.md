@@ -87,6 +87,10 @@
 
 [Pattern induction and matching in music signals](http://www.cs.tut.fi/sgn/arg/klap/patterns.pdf)
 
+[Unsupervised Generation of Percussion Sound Sequences From a Sound Example](http://mtg.upf.edu/system/files/publications/MarchiniPurwinsContinuationSMC2010Final.pdf)
+
+[Automatic Phrase Continuation from Guitar and Bass-guitar Melodies](http://doc.ml.tu-berlin.de/bbci/publications/ChePurMar13.pdf)
+
 
 
 
