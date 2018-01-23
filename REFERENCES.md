@@ -1,30 +1,5 @@
 
-#Percussion Analysis
-
-[Rhythm Pattern Extraction](http://werner.yellowcouch.org/Papers/rhythmex/)
-
-[Rhythm Transcription of MIDI Performances](https://eita-nakamura.github.io/articles/Nakamura_etal_RhythmTranscriptionBasedOnHierarchicalBayesianModellingOfRepetitionAndModification_EUSIPCO2016.pdf)
-
-[Rhythm Quantization for Transcription](http://www.nici.ru.nl/mmm/papers/cdk-2/cdk-2.pdf)
-
-[Subband-based Drum Transcription for Audio Signals](http://www.karmetik.com/sites/default/files/publications/2005_mmsp_drum.pdf)
-
-[Drum Music Transcription using Prior Subspace Analysis and Pattern Recognition](http://dafx10.iem.at/proceedings/papers/SpichZanoniSartiTubaro_DAFx10_P95.pdf)
-
-[Drum Transcription via Classification of Bar-Level Patterns](http://www.terasoft.com.tw/conf/ismir2014/proceedings/T034_302_Paper.pdf)
-
-[Towards Timbre Recognition of Percussive Sounds](http://karmetik.com/sites/default/files/publications/2004_icmc_snare.pdf)
-
-[Improvements to Percussive Component Extraction Using Non-Negative Matrix Factorization and Support Vector Machines](http://www.ericbattenberg.com/school/percussion_extraction_ebattenberg_2008_0.pdf)
-
-[Beatbox Classification Using ACE](https://www.cs.princeton.edu/%7Efiebrink/publications/SinyorMcKayFiebrinkMcEnnisFujinaga_ISMIR2005.pdf)
-
-[Live Drum Separation Using Probabilistic Spectral Clustering](https://parlab.eecs.berkeley.edu/sites/all/parlab/files/Live%20Drum%20Separation%20Using%20Probabilistic%20Spectral%20Clustering%20Based%20on%20the%20Itakura-Saito%20Divergence.pdf)
-
-
-
-
-# Audio Analysis
+# Music Audio Analysis
 
 [An Evaluation of Audio Feature Extraction Toolboxes](https://www.ntnu.edu/documents/1001201110/1266017954/DAFx-15_submission_43_v2.pdf/06508f48-9272-41c8-9381-7639a0240770)
 
@@ -62,14 +37,37 @@
 
 
 
+#Rhythm and Percussion Analysis
 
-#Structure
+[Rhythm Pattern Extraction](http://werner.yellowcouch.org/Papers/rhythmex/)
+
+[Rhythm Transcription of MIDI Performances](https://eita-nakamura.github.io/articles/Nakamura_etal_RhythmTranscriptionBasedOnHierarchicalBayesianModellingOfRepetitionAndModification_EUSIPCO2016.pdf)
+
+[Rhythm Quantization for Transcription](http://www.nici.ru.nl/mmm/papers/cdk-2/cdk-2.pdf)
+
+[Subband-based Drum Transcription for Audio Signals](http://www.karmetik.com/sites/default/files/publications/2005_mmsp_drum.pdf)
+
+[Drum Music Transcription using Prior Subspace Analysis and Pattern Recognition](http://dafx10.iem.at/proceedings/papers/SpichZanoniSartiTubaro_DAFx10_P95.pdf)
+
+[Drum Transcription via Classification of Bar-Level Patterns](http://www.terasoft.com.tw/conf/ismir2014/proceedings/T034_302_Paper.pdf)
+
+[Towards Timbre Recognition of Percussive Sounds](http://karmetik.com/sites/default/files/publications/2004_icmc_snare.pdf)
+
+[Improvements to Percussive Component Extraction Using Non-Negative Matrix Factorization and Support Vector Machines](http://www.ericbattenberg.com/school/percussion_extraction_ebattenberg_2008_0.pdf)
+
+[Beatbox Classification Using ACE](https://www.cs.princeton.edu/%7Efiebrink/publications/SinyorMcKayFiebrinkMcEnnisFujinaga_ISMIR2005.pdf)
+
+[Live Drum Separation Using Probabilistic Spectral Clustering](https://parlab.eecs.berkeley.edu/sites/all/parlab/files/Live%20Drum%20Separation%20Using%20Probabilistic%20Spectral%20Clustering%20Based%20on%20the%20Itakura-Saito%20Divergence.pdf)
+
+[Rhythm Map: Extraction of Unit Rhythmic Patterns and Analysis of Rhythmic Structure](https://pdfs.semanticscholar.org/d850/4267c50bce31da57a857c000b6e9fe2eb111.pdf)
+
+
+
+#Structure Models
 
 [Evolving Structures for Electronic Dance Music](https://www.sfu.ca/~eigenfel/Eigenfeldt%20GECCO2013.pdf)
 
 [A Corpus-Based Study of Rhythm Patterns](http://matthiasmauch.de/_pdf/mauch_csr_2012.pdf)
-
-[Generating "Good" Musical Rhythms Algorithmically](http://cgm.cs.mcgill.ca/%7Egodfried/publications/Hawaii-Paper-Rhythm-Generation.pdf)
 
 [Complexity measures of musical rhythms](http://musicweb.ucsd.edu/~sdubnov/Mu206/ComplexityRhythm.pdf)
 
@@ -86,6 +84,12 @@
 [A prototype-based resonance model of rhythm categorization](http://www.sumsar.net/papers/baath_2014_rhythm_categorization.pdf)
 
 [Pattern induction and matching in music signals](http://www.cs.tut.fi/sgn/arg/klap/patterns.pdf)
+
+
+
+#Generative Algorithms
+
+[Generating "Good" Musical Rhythms Algorithmically](http://cgm.cs.mcgill.ca/%7Egodfried/publications/Hawaii-Paper-Rhythm-Generation.pdf)
 
 [Unsupervised Generation of Percussion Sound Sequences From a Sound Example](http://mtg.upf.edu/system/files/publications/MarchiniPurwinsContinuationSMC2010Final.pdf)
 
