@@ -8,6 +8,11 @@ import librosa
 import librosa.display
 import sys, os
 
+def detect_pitch(y, sr, t):
+    index = magnitudes[:, t].argmax()
+    pitch = pitches[index, t]
+    return pitch
+
 #############################################
 # Load an example with vocals.
 path = sys.argv[1]
