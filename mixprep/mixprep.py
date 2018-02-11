@@ -85,7 +85,7 @@ class SignalViewer(tk.Frame):
 		self.axes.plot(ticks, samples, '.', filltime, interp)
 	def _plot_line(self, samples, resolution):
 		# We have a reasonable number of samples, so draw an ordinary waveform.
-		self.axes.plot(np.arange(len(samples)), samples)
+		self.axes.plot(np.arange(len(samples)), samples, lw=0.5)
 	def on_resize(self, event):
 		self.config(width=event.width, height=event.height)
 		self.plot()
