@@ -54,6 +54,7 @@ class UI(tk.Tk):
 		sys.exit(0)
 
 
+
 def main():
 	parser = argparse.ArgumentParser()
 	parser.add_argument("filename", type=str, help="Audio file to edit")
@@ -71,9 +72,13 @@ def main():
 	controls.grid(row=0, column=0, sticky='nsew')
 	editview = Editview(layout, signal)
 	editview.grid(row=1, column=0, sticky='nsew')
-	overview = Overview(layout, signal, height=64, bd=0, command=editview.view)
+	overview = Overview(layout, signal, height=80, bd=0)
 	overview.grid(row=2, column=0, sticky='nsew')
 	layout.pack(fill=tk.BOTH, expand=True)
+
+	editview.select_command = overview.select
+	overview.view_command = editview.view
+
 	root.mainloop()
 
 
