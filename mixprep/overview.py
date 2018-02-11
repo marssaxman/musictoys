@@ -7,10 +7,14 @@ def rms(samples):
 
 class Overview(tk.Canvas):
 	def __init__(self, container, signal, **kwargs):
+		self.signal = signal
 		if not 'background' in kwargs and not 'bg' in kwargs:
 			kwargs['background'] = '#222222'
+		self.command = None
+		if 'command' in kwargs:
+			self.command = kwargs['command']
+			del kwargs['command']
 		tk.Canvas.__init__(self, container, **kwargs)
-		self.signal = signal
 		# interval represents the beginning and ending coordinates of the slice
 		# of the signal that we are highlighting, from 0..1
 		self.interval = (0, 1.0)
@@ -42,10 +46,13 @@ class Overview(tk.Canvas):
 		length *= factor
 		if eventx:
 			pos = float(eventx) / float(self.winfo_width())
-		begin = max(0, pos - (length / 2.0))
-		end = min(1, begin + length)
-		self.interval = (begin, end)
-		self._draw_interval()
+		newbegin = max(0, pos - (length / 2.0))
+		newend = min(1, newbegin + length)
+		if newbegin != begin or newend != end:
+			self.interval = (newbegin, newend)
+			self._draw_interval()
+			if self.command:
+				self.command(self.interval)
 
 	def _draw(self):
 		self.delete('all')

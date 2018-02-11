@@ -71,7 +71,7 @@ def main():
 	controls.grid(row=0, column=0, sticky='nsew')
 	editview = Editview(layout, signal)
 	editview.grid(row=1, column=0, sticky='nsew')
-	overview = Overview(layout, signal, height=64, bd=0)
+	overview = Overview(layout, signal, height=64, bd=0, command=editview.view)
 	overview.grid(row=2, column=0, sticky='nsew')
 	layout.pack(fill=tk.BOTH, expand=True)
 	root.mainloop()
