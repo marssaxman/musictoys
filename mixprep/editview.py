@@ -26,7 +26,14 @@ class Editview(tk.Frame):
 
 	def view(self, interval):
 		# Display the slice of the signal specified by the fractional interval.
-		self.interval = interval
+		# Limit the interval to some reasonable scale for our signal length.
+		minlength = 32.0 / float(len(self.signal.mono))
+		begin, end = interval
+		length = max(minlength, end - begin)
+		pos = (begin + end) / 2.0
+		begin = max(0, pos - length / 2.0)
+		end = min(1.0, begin + length)
+		self.interval = (begin, end)
 		self.plot()
 
 	def plot(self):
