@@ -7,17 +7,17 @@ def rms(samples):
 
 class Overview(tk.Canvas):
 	def __init__(self, container, signal, **kwargs):
-		self.signal = signal
+		self._signal = signal
 		if not 'background' in kwargs and not 'bg' in kwargs:
 			kwargs['background'] = '#222222'
-		self.command = None
+		self._command = None
 		if 'command' in kwargs:
-			self.command = kwargs['command']
+			self._command = kwargs['command']
 			del kwargs['command']
 		tk.Canvas.__init__(self, container, **kwargs)
 		# interval represents the beginning and ending coordinates of the slice
 		# of the signal that we are highlighting, from 0..1
-		self.interval = (0, 1.0)
+		self._interval = (0, 1.0)
 		# we keep track of the object ID we used to draw the interval frame so
 		# we don't have to redraw the entire waveform while zooming/scrolling
 		self._interval_box_id = None
@@ -42,7 +42,7 @@ class Overview(tk.Canvas):
 
 	def on_mousedown(self, event):
 		pos = float(event.x) / float(self.winfo_width())
-		begin, end = self.interval
+		begin, end = self._interval
 		if pos >= begin and pos <= end:
 			self._mouse_drag_offset = pos - begin
 			self.bind("<B1-Motion>", self.on_mousemove)
@@ -50,7 +50,7 @@ class Overview(tk.Canvas):
 
 	def on_mousemove(self, event):
 		pos = float(event.x) / float(self.winfo_width())
-		begin, end = self.interval
+		begin, end = self._interval
 		length = end - begin
 		begin = pos - self._mouse_drag_offset
 		self.view((begin, begin + length))
@@ -60,7 +60,7 @@ class Overview(tk.Canvas):
 		self.unbind("<ButtonRelease-1>")
 
 	def zoom(self, factor, eventx=None):
-		begin, end = self.interval
+		begin, end = self._interval
 		length = end - begin
 		pos = (begin + end) / 2.0
 		length *= factor
@@ -73,21 +73,21 @@ class Overview(tk.Canvas):
 	def view(self, interval):
 		newbegin = max(0, interval[0])
 		newend = min(1, interval[1])
-		begin, end = self.interval
+		begin, end = self._interval
 		if newbegin != begin or newend != end:
-			self.interval = (newbegin, newend)
+			self._interval = (newbegin, newend)
 			self._draw_interval()
-			if self.command:
-				self.command(self.interval)
+			if self._command:
+				self._command(self._interval)
 
 	def _draw(self):
 		self.delete('all')
 		self._interval_box_id = None
 		width = self.winfo_width()
 		height = self.winfo_height()
-		samplecount = len(self.signal.mono)
-		left_channel = self.signal.left
-		right_channel = self.signal.right
+		samplecount = len(self._signal.mono)
+		left_channel = self._signal.left
+		right_channel = self._signal.right
 		vloc = height / 2
 		vscale = height * 3 / 8
 		for x in xrange(width):
@@ -114,7 +114,7 @@ class Overview(tk.Canvas):
 			self.delete(self._interval_box_id)
 			self._interval_box_id = None
 		# Draw a highlight box around the view interval.
-		begin, end = self.interval
+		begin, end = self._interval
 		if begin > 0 or end < 1:
 			width, height = self.winfo_width(), self.winfo_height()
 			color, pix = '#FF0000', 3
