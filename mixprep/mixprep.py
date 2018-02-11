@@ -87,8 +87,30 @@ class SignalViewer(tk.Frame):
 		# We have a reasonable number of samples, so draw an ordinary waveform.
 		self.axes.plot(np.arange(len(samples)), samples, lw=0.5)
 	def on_resize(self, event):
-		self.config(width=event.width, height=event.height)
 		self.plot()
+
+
+class Overview(tk.Canvas):
+	def __init__(self, container, signal, **kwargs):
+		tk.Canvas.__init__(self, container, **kwargs)
+		self.signal = signal
+		self.bind("<Configure>", self.on_resize)
+		self._draw()
+	def on_resize(self, event):
+		self._draw()
+	def _draw(self):
+		self.delete('all')
+		width = self.winfo_width()
+		height = self.winfo_height()
+		samplecount = len(self.signal.mono)
+		vsize = height / 2
+		for x in xrange(width):
+			begin = samplecount * x / width
+			end = samplecount * (x+1) / width
+			slice = self.signal.mono[begin:end]
+			low = -min(slice) * vsize + vsize
+			high = -max(slice) * vsize + vsize
+			self.create_line(x, low, x, high)
 
 
 class UI(tk.Tk):
@@ -127,7 +149,7 @@ def main():
 	controls.grid(row=0, column=0, sticky='nsew')
 	editor = SignalViewer(layout, signal)
 	editor.grid(row=1, column=0, sticky='nsew')
-	overview = tk.Frame(layout)
+	overview = Overview(layout, signal, height=64)
 	overview.grid(row=2, column=0, sticky='nsew')
 	layout.pack(fill=tk.BOTH, expand=True)
 	root.mainloop()
