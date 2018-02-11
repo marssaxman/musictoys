@@ -7,9 +7,10 @@ import numpy as np
 
 class Editview(tk.Frame):
 	def __init__(self, container, signal, **kwargs):
-		tk.Frame.__init__(self, container, **kwargs)
 		self.signal = signal
 		self.interval = (0,1)
+		self._redraw_waiting = False
+		tk.Frame.__init__(self, container, **kwargs)
 		self.figure = matplotlib.figure.Figure(figsize=(6,1), dpi=100)
 		self.axes = self.figure.add_axes([0,0,1,1])
 		self.axes.get_xaxis().set_visible(False)
@@ -19,10 +20,10 @@ class Editview(tk.Frame):
 		widget = self.canvas.get_tk_widget()
 		widget.pack(fill=tk.BOTH, expand=True)
 		self.bind('<Configure>', self.on_resize)
-		self.plot()
+		self.draw()
 
 	def on_resize(self, event):
-		self.plot()
+		self.draw()
 
 	def view(self, interval):
 		# Display the slice of the signal specified by the fractional interval.
@@ -34,6 +35,15 @@ class Editview(tk.Frame):
 		begin = max(0, pos - length / 2.0)
 		end = min(1.0, begin + length)
 		self.interval = (begin, end)
+		self.draw()
+
+	def draw(self):
+		if not self._redraw_waiting:
+			self._redraw_waiting = True
+			self.after(100, self._async_draw)
+
+	def _async_draw(self):
+		self._redraw_waiting = False
 		self.plot()
 
 	def plot(self):
