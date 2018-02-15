@@ -33,6 +33,7 @@ class AudioTrack:
 		self.left = signal[0, :]
 		self.right = signal[1, :]
 		self.mono = librosa.to_mono(signal)
+		self.duration = len(self.mono) / float(self.samplerate)
 
 
 class UI(tk.Tk):
