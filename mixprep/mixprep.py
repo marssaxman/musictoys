@@ -21,6 +21,7 @@ import sys
 import math
 from editview import Editview
 from overview import Overview
+from waveplot import Waveplot
 
 def next_power_of_2(n):
 	return 2 ** math.ceil(math.log(n, 2))
@@ -71,14 +72,14 @@ def main():
 	layout.grid_rowconfigure(2, weight=0)
 	controls = tk.Frame(layout, borderwidth=0, highlightthickness=0)
 	controls.grid(row=0, column=0, sticky='nsew')
-	editview = Editview(layout, signal)
-	editview.grid(row=1, column=0, sticky='nsew')
+	waveplot = Waveplot(layout, signal)
+	waveplot.grid(row=1, column=0, sticky='nsew')
 	overview = Overview(layout, signal, height=80, bd=0)
 	overview.grid(row=2, column=0, sticky='nsew')
 	layout.pack(fill=tk.BOTH, expand=True)
 
-	editview.select_command = overview.select
-	overview.view_command = editview.view
+	#editview.select_command = overview.select
+	overview.view_command = waveplot.view
 
 	root.mainloop()
 
