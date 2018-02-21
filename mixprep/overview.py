@@ -103,8 +103,8 @@ class Overview(tk.Canvas):
 			left_bin = left_channel[begin:end]
 			right_bin = right_channel[begin:end]
 			# Get the maximum (absolute) and RMS values for these bins.
-			left_max, left_rms = max(np.abs(left_bin)), rms(left_bin)
-			right_max, right_rms = max(np.abs(right_bin)), rms(right_bin)
+			left_max, left_rms = np.max(np.abs(left_bin)), rms(left_bin)
+			right_max, right_rms = np.max(np.abs(right_bin)), rms(right_bin)
 			# Draw the left channel on top and the right channel below, using
 			# dark grey for the max and a lighter grey for RMS.
 			top_pos = vloc - (left_max * vscale)
