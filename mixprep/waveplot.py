@@ -3,18 +3,6 @@ import numpy as np
 import librosa
 
 
-def _rasterize(signal, width, height):
-	# Slice the signal up into frames, one frame per column.
-	step = int(len(signal) / float(width))
-	frames = librosa.util.frame(signal, frame_length=step, hop_length=step)
-	# Compute a histogram for each frame.
-	bins = np.linspace(-1, 1, num=height+1)
-	func = lambda x: np.histogram(x, bins=bins)
-	hist, edges = np.apply_along_axis(func, 0, frames)
-	# The result is a list of lists; join them into a 2D array, then normalize.
-	return (np.vstack(hist) / float(step)) ** (0.25)
-
-
 class Waveplot(tk.Canvas):
 	def __init__(self, container, signal, **kwargs):
 		if not 'background' in kwargs and not 'bg' in kwargs:
@@ -62,11 +50,22 @@ class Waveplot(tk.Canvas):
 		signal = self._get_view_signal()
 		width = self.winfo_width()
 		height = self.winfo_height()
-		levels = _rasterize(signal, width, height)
+		# Slice the signal up into frames, one frame per column.
+		step = int(len(signal) / float(width))
+		frames = librosa.util.frame(signal, frame_length=step, hop_length=step)
+		# Compute a histogram for each frame.
+		bins = np.linspace(-1, 1, num=height+1)
+		func = lambda x: np.histogram(x, bins=bins)
+		hist, edges = np.apply_along_axis(func, 0, frames)
+		# Normalize according to the number of samples per frame.
+		hist = hist / float(step)
 		# Turn all those levels into a giant string, because that's the only
 		# interface Tkinter's PhotoImage class gives us for altering pixels.
 		colormap = ["#%02x%02x%02x" % (n,n,n) for n in xrange(256)]
-		for x in xrange(width):
-			pix = [colormap[int(levels[x][y]*255)] for y in xrange(height)]
+		for x, levels in enumerate(hist):
+			# Add some gamma correction to make it prettier
+			levels = levels ** (0.25)
+			# Map levels to entries in our color palette.
+			pix = [colormap[int(levels[y]*255)] for y in xrange(height)]
 			self._image_buffer.put(" ".join(pix), (x,0))
 		self.update()
