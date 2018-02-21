@@ -1,6 +1,11 @@
 import Tkinter as tk
 import numpy as np
 import librosa
+import time
+
+
+def time_millis():
+	return int(round(time.time() * 1000))
 
 
 class _FramedHistograms:
@@ -28,6 +33,8 @@ class _Rasterizer:
 		self._source = source
 		self._colormap = colormap
 		self._pixels = [None] * len(source)
+	def __len__(self):
+		return len(self._pixels)
 	def __getitem__(self, index):
 		pixels = self._pixels[index]
 		if pixels is None:
@@ -49,8 +56,8 @@ class Waveplot(tk.Canvas):
 			kwargs['background'] = '#FFFFFF'
 		tk.Canvas.__init__(self, container, **kwargs)
 		self._signal = signal
-		self._histograms = None
 		self._rasterizer = None
+		self._must_render = False
 		# Create the initial image buffer, which we will replace as soon as we
 		# have been configured with our actual dimensions.
 		self._image_buffer = tk.PhotoImage(width=1, height=1)
@@ -68,7 +75,6 @@ class Waveplot(tk.Canvas):
 		height = self.winfo_height()
 		self._image_buffer = tk.PhotoImage(width=width, height=height)
 		self.itemconfig(self._image_handle, image=self._image_buffer)
-		self._histograms = None
 		self._rasterizer = None
 		self._draw()
 
@@ -81,34 +87,51 @@ class Waveplot(tk.Canvas):
 			new_duration = newend - newbegin
 			if old_duration != new_duration:
 				# zoom level has changed
-				self._histograms = None
 				self._rasterizer = None
 			self._view_interval = (newbegin, newend)
 			self._draw()
 
-	def _draw(self):
+	def _gen_rasterizer(self):
 		begin, end = self._view_interval
 		width, height = self.winfo_width(), self.winfo_height()
-		if not self._histograms:
-			# Compute the frame step, which is equal to the number of samples
-			# per pixel we'd have if we were displaying the whole signal.
-			view_fraction = end - begin
-			total_samples = len(self._signal.mono)
-			view_samples = total_samples * view_fraction
-			samples_per_pixel = view_samples / width
-			step = int(samples_per_pixel)
-			# We'll create one histogram bin per pixel of column height.
-			bins = height + 1
-			# Divide the original signal into frames, with lazy histogram
-			# generators we'll call on as needed.
-			self._histograms = _FramedHistograms(self._signal.mono, step, bins)
+		# Compute the frame step, which is equal to the number of samples
+		# per pixel we'd end up with if we displayed the whole signal at this
+		# zoom level.
+		view_fraction = end - begin
+		total_samples = len(self._signal.mono)
+		view_samples = total_samples * view_fraction
+		samples_per_pixel = view_samples / width
+		step = int(samples_per_pixel)
+		# We'll create one histogram bin per pixel of column height.
+		bins = height + 1
+		# Divide the original signal into frames, with a lazy memoizing 
+		# histogram generator we can use for density information.
+		histograms = _FramedHistograms(self._signal.mono, step, bins)
+		self._rasterizer = _Rasterizer(histograms, self._colormap)
+
+	def _draw(self):
+		if not self._must_render:
+			self._must_render = True
+			self.after(1, self._render)
+
+	def _render(self, skip=0, timeout=100):
+		self._must_render = False
+		start_time = time_millis()
 		if not self._rasterizer:
-			self._rasterizer = _Rasterizer(self._histograms, self._colormap)
+			self._gen_rasterizer()
+		begin, end = self._view_interval
+		width, height = self.winfo_width(), self.winfo_height()
 		# Turn all those levels into a giant string, because that's the only
 		# interface Tkinter's PhotoImage class gives us for altering pixels.
-		num_frames = len(self._histograms)
+		num_frames = len(self._rasterizer)
 		indices = xrange(int(begin * num_frames), int(end * num_frames))
 		for x, frame_index in enumerate(indices):
-			pixels = self._rasterizer[frame_index]
-			self._image_buffer.put(pixels, (x,0))
+			pixels = self._rasterizer[(frame_index + skip) % num_frames]
+			self._image_buffer.put(pixels, ((x + skip) % num_frames,0))
+			elapsed = time_millis() - start_time
+			if elapsed > timeout:
+				self._must_render = True
+				self.after(1, lambda: self._render(skip=(skip+x)))
+				break
 		self.update()
+
