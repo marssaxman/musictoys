@@ -47,6 +47,7 @@ class _Rasterizer:
 			colors = (self._colormap[int(v)] for v in levels)
 			# Join color strings into a pixel sequence for this column.
 			pixels = " ".join(colors)
+			self._pixels[index] = pixels
 		return pixels
 
 
