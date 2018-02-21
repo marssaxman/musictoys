@@ -3,6 +3,26 @@ import numpy as np
 import librosa
 
 
+class FramedHistograms:
+	def __init__(self, signal, step, bins):
+		self.signal = signal
+		self.normalize = 1 / float(step)
+		self.frames = librosa.util.frame(
+				signal, frame_length=step, hop_length=step)
+		self.bins = np.linspace(-1, 1, num=bins)
+		self.histograms = [None] * self.frames.shape[1]
+	def __len__(self):
+		return len(self.histograms)
+	def __getitem__(self, key):
+		histogram = self.histograms[key]
+		if not histogram:
+			frame = self.frames[:,key]
+			histogram, edges = np.histogram(frame, bins=self.bins)
+			histogram = histogram * self.normalize
+			self.histograms[key] = histogram
+		return histogram
+
+
 class Waveplot(tk.Canvas):
 	def __init__(self, container, signal, **kwargs):
 		if not 'background' in kwargs and not 'bg' in kwargs:
@@ -52,13 +72,7 @@ class Waveplot(tk.Canvas):
 		height = self.winfo_height()
 		# Slice the signal up into frames, one frame per column.
 		step = int(len(signal) / float(width))
-		frames = librosa.util.frame(signal, frame_length=step, hop_length=step)
-		# Compute a histogram for each frame.
-		bins = np.linspace(-1, 1, num=height+1)
-		func = lambda x: np.histogram(x, bins=bins)
-		hist, edges = np.apply_along_axis(func, 0, frames)
-		# Normalize according to the number of samples per frame.
-		hist = hist / float(step)
+		hist = FramedHistograms(signal, step, height+1)
 		# Turn all those levels into a giant string, because that's the only
 		# interface Tkinter's PhotoImage class gives us for altering pixels.
 		colormap = ["#%02x%02x%02x" % (n,n,n) for n in xrange(256)]
