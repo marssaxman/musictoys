@@ -19,7 +19,6 @@ import argparse
 import librosa
 import sys
 import math
-from editview import Editview
 from overview import Overview
 from waveplot import Waveplot
 
