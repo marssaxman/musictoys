@@ -23,6 +23,26 @@ class _FramedHistograms:
 		return histogram
 
 
+class _Rasterizer:
+	def __init__(self, source, colormap):
+		self._source = source
+		self._colormap = colormap
+		self._pixels = [None] * len(source)
+	def __getitem__(self, index):
+		pixels = self._pixels[index]
+		if pixels is None:
+			levels = self._source[index]
+			# Add some gamma correction to make it prettier
+			levels = levels ** (0.25)
+			# Map levels onto entries in our color palette
+			levels = levels * (len(self._colormap)-1)
+			# Look up color strings for each quantized level
+			colors = (self._colormap[int(v)] for v in levels)
+			# Join color strings into a pixel sequence for this column.
+			pixels = " ".join(colors)
+		return pixels
+
+
 class Waveplot(tk.Canvas):
 	def __init__(self, container, signal, **kwargs):
 		if not 'background' in kwargs and not 'bg' in kwargs:
@@ -30,6 +50,7 @@ class Waveplot(tk.Canvas):
 		tk.Canvas.__init__(self, container, **kwargs)
 		self._signal = signal
 		self._histograms = None
+		self._rasterizer = None
 		# Create the initial image buffer, which we will replace as soon as we
 		# have been configured with our actual dimensions.
 		self._image_buffer = tk.PhotoImage(width=1, height=1)
@@ -48,6 +69,7 @@ class Waveplot(tk.Canvas):
 		self._image_buffer = tk.PhotoImage(width=width, height=height)
 		self.itemconfig(self._image_handle, image=self._image_buffer)
 		self._histograms = None
+		self._rasterizer = None
 		self._draw()
 
 	def view(self, interval):
@@ -60,16 +82,9 @@ class Waveplot(tk.Canvas):
 			if old_duration != new_duration:
 				# zoom level has changed
 				self._histograms = None
+				self._rasterizer = None
 			self._view_interval = (newbegin, newend)
 			self._draw()
-
-	def _get_view_signal(self):
-		# Return the slice of signal data we are currently viewing.
-		begin, end = self._view_interval
-		signal = self._signal.mono
-		begin_index = int(begin * float(len(signal)))
-		end_index = int(end * float(len(signal)))
-		return signal[begin_index:end_index]
 
 	def _draw(self):
 		begin, end = self._view_interval
@@ -87,15 +102,13 @@ class Waveplot(tk.Canvas):
 			# Divide the original signal into frames, with lazy histogram
 			# generators we'll call on as needed.
 			self._histograms = _FramedHistograms(self._signal.mono, step, bins)
+		if not self._rasterizer:
+			self._rasterizer = _Rasterizer(self._histograms, self._colormap)
 		# Turn all those levels into a giant string, because that's the only
 		# interface Tkinter's PhotoImage class gives us for altering pixels.
 		num_frames = len(self._histograms)
 		indices = xrange(int(begin * num_frames), int(end * num_frames))
 		for x, frame_index in enumerate(indices):
-			levels = self._histograms[frame_index]
-			# Add some gamma correction to make it prettier
-			levels = levels ** (0.25)
-			# Map levels to entries in our color palette.
-			pix = [self._colormap[int(levels[y]*255)] for y in xrange(height)]
-			self._image_buffer.put(" ".join(pix), (x,0))
+			pixels = self._rasterizer[frame_index]
+			self._image_buffer.put(pixels, (x,0))
 		self.update()
