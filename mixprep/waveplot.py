@@ -25,10 +25,10 @@ class _FramedHistograms:
 
 
 class _Rasterizer:
-	def __init__(self, source, colormap):
+	def __init__(self, source, height):
 		self._source = source
-		self._colormap = colormap
 		self._pixels = [None] * len(source)
+		self._rowspec = "#{:0>2x}{:0>2x}{:0>2x} " * height
 	def __len__(self):
 		return len(self._pixels)
 	def __getitem__(self, index):
@@ -37,13 +37,13 @@ class _Rasterizer:
 			levels = self._source[index]
 			# Add some gamma correction to make it prettier
 			levels = levels ** (0.25)
-			# Map levels onto entries in our color palette
-			levels = levels * (len(self._colormap)-1)
-			# Look up color strings for each quantized level
-			colors = (self._colormap[int(v)] for v in levels)
-			# Join color strings into a pixel sequence for this column.
-			pixels = " ".join(colors)
-			#self._pixels[index] = pixels
+			# multiply our 0..1 level values by 255 and convert to uint8,
+			# then repeat each element three times for RGB
+			levels = np.asarray(levels * 255, dtype=np.uint8).repeat(3)
+			# apply all the channel values to create one big string param
+			pixels = self._rowspec.format(*levels)
+			# that's the weirdness PhotoImage.put() calls for!
+			self._pixels[index] = pixels
 		return pixels
 
 
@@ -60,8 +60,6 @@ class Waveplot(tk.Canvas):
 		self._image_buffer = tk.PhotoImage(width=1, height=1)
 		self._image_handle = self.create_image(
 				0, 0, anchor=tk.NW, image=self._image_buffer)
-		# Generate the array of HTML color names we must supply to PhotoImage.
-		self._colormap = ["#%02x%02x%02x" % (n,n,n) for n in xrange(256)]
 		# interval represents the beginning and ending coordinates of the slice
 		# of the signal that we are highlighting, from 0..1
 		self._view_interval = (0, 1.0)
@@ -104,7 +102,7 @@ class Waveplot(tk.Canvas):
 		# Divide the original signal into frames, with a lazy memoizing 
 		# histogram generator we can use for density information.
 		histograms = _FramedHistograms(self._signal.mono, step, bins)
-		self._rasterizer = _Rasterizer(histograms, self._colormap)
+		self._rasterizer = _Rasterizer(histograms, height)
 
 	def _draw(self):
 		if not self._must_render:
