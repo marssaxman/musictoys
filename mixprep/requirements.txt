@@ -1,4 +1,4 @@
-matplotlib==2.1.1
+fast-histogram==0.4
 librosa==0.5.1
 numpy==1.11.0
 
