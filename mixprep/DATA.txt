@@ -1,0 +1,93 @@
+notes on the data structure of the mixprep program
+fundamental data structure is an edit-decision-list in tree form
+objects:
+	buffer - array of samples
+		channels L/R
+		sample rate
+	clip - view onto another object
+		start, end timestamps
+	transition - join two objects
+		left end abuts right head
+		on each side, fade length & curve
+	playlist - sequence of clips & transitions
+
+load up an audio file into a buffer
+app now has a playlist containing one clip pointing at an entire buffer
+split a clip, creating two clips and a transition between them
+remove a clip, joining the adjacent transitions
+insert a clip into a transition, thus creating two transitions
+finally, render a playlist down to create a new buffer
+this will presumably happen implicitly, for playback, but also for export.
+
+what might you want to do with one of these things?
+- render to audio buffer
+- get instantaneous feature frame for some point in time
+- get array of feature frames for some span at some desired resolution
+- play back some timespan (might be cheaper than rendering to a buffer)
+- get a list of events, or events of some type, for some span...?
+
+it seems like we are basically going to attach arrays of timestamp events to
+the audio buffer after performing onset analysis, beat analysis, etc. then it's
+basically a matter of clips and playlists performing timebase adjustment when
+querying
+
+hmm... I wonder if it makes sense to model the target of the edit window as
+a clip, framing whatever subset of the actual graph root we want to look at
+then it just asks for feature frames which correspond to pixels...?
+I guess it's an efficiency / caching question
+
+yeah, that's really all you can do with an object in generic terms, I guess:
+describe it, play it, or render it.
+a playlist is actually a list of transitions. maybe it's a cue sheet rather
+than a playlist. and I guess it's just a flattened view of a tree, really
+
+another way to look at it would be to associate the transition with the clip.
+we could say that a clip is a view of an audio stream which defines two cue
+points, used to synchronize mix-in and mix-out. It could have a fade-in length
+and fade-out length, which could be zero (or even negative), and each fade
+could have a curve parameter, which is a 0..1 exponent...
+yeah, actually that wouldn't suck. maybe the handles are attached to the clip,
+not to the transition, so you manipulate them independently
+
+ok, here's the api
+
+audio object
+	duration
+	frame at time
+	frames for time span
+	event nearest[before|after] time
+	events within time span
+	Seek to time
+	Play/Pause
+	Render to buffer
+
+buffer:
+	data array
+	sample rate
+
+clip:
+	source object
+	origin time span
+
+transition:
+	head
+	tail
+	duration (seconds)
+	bias (fraction)
+	curve (exponent)
+
+
+this is the render-level data model
+the playlist represents the user-facing data model
+it is essentially an array of transitions between clips
+the UI acts on the playlist
+the playlist manages the underlying audio clip graph
+UI actions (undoables) are represented in terms of actions on the playlist
+but each playlist action may be implemented as some greater number of changes
+to the underlying audio clip graph.
+everything is immutable, of course.
+
+
+
+
+
