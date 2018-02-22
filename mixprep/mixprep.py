@@ -41,10 +41,11 @@ class UI(tk.Tk):
 		tk.Tk.__init__(self, *args, **kwargs)
 		self.title("music prep tool for custom club edits")
 		self.minsize(480, 256)
+		self.maxsize(1200, 512)
 		screenwidth = self.winfo_screenwidth()
 		screenheight = self.winfo_screenheight()
-		width = screenwidth * 4 / 5
-		height = screenheight * 2 / 3
+		width = min(1200, screenwidth * 4 / 5)
+		height = min(512, screenheight * 2 / 3)
 		hpos = (screenwidth - width) / 2
 		vpos = (screenheight - height) / 2
 		self.geometry('%dx%d+%d+%d' % (width, height, hpos, vpos))
