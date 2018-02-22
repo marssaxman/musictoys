@@ -28,23 +28,37 @@ class _Rasterizer:
 	def __init__(self, source, height):
 		self._source = source
 		self._pixels = [None] * len(source)
-		self._rowspec = "#{:0>2x}{:0>2x}{:0>2x} " * height
 	def __len__(self):
 		return len(self._pixels)
 	def __getitem__(self, index):
 		pixels = self._pixels[index]
 		if pixels is None:
-			levels = self._source[index]
-			# Add some gamma correction to make it prettier
-			levels = levels ** (0.25)
-			# multiply our 0..1 level values by 255 and convert to uint8,
-			# then repeat each element three times for RGB
-			levels = np.asarray(levels * 255, dtype=np.uint8).repeat(3)
-			# apply all the channel values to create one big string param
-			pixels = self._rowspec.format(*levels)
-			# that's the weirdness PhotoImage.put() calls for!
+			pixels = ''.join(self._doformat(self._source[index]))
 			self._pixels[index] = pixels
 		return pixels
+	def _doformat(self, levels):
+		# Emit a sequence of ASCII values corresponding to the HTML color
+		# literals which would produce a grey tone whose brightness corresponds
+		# to the input value's position in the range 0..1. This is messy
+		# because it is speed-critical. By constructing a string from this
+		# generator using join(), we only have to perform one allocation. Why
+		# on earth are we constructing a string at all? Because that's the only
+		# form of input PhotoImage.put() accepts.
+		for floatval in levels:
+			yield ' '
+			yield '#'
+			# Add some gamma correction to make it prettier, then map to the
+			# RGB24 range 0..255.
+			intval = int((floatval ** 0.25) * 255)
+			hexes = '0123456789abcdef'
+			hi = hexes[(intval >> 4) & 0x0F]
+			lo = hexes[intval & 0x0F]
+			yield hi
+			yield lo
+			yield hi
+			yield lo
+			yield hi
+			yield lo
 
 
 class Waveplot(tk.Canvas):
