@@ -47,7 +47,7 @@ class Signal(np.ndarray):
 		return np.sqrt(np.mean(self ** 2.0))
 
 	@lazy_property
-	def duration(self)
+	def duration(self):
 		# The size, measured in seconds.
 		return float(len(self)) / self.frequency
 
