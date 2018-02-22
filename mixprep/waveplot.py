@@ -7,7 +7,6 @@ import time
 class _FramedHistograms:
 	def __init__(self, signal, step, bins):
 		self.signal = signal
-		self.normalize = 1 / float(step)
 		self.frames = librosa.util.frame(
 				signal, frame_length=step, hop_length=step)
 		self.bins = np.linspace(-1, 1, num=bins)
@@ -19,7 +18,8 @@ class _FramedHistograms:
 		if histogram is None:
 			frame = self.frames[:,key]
 			histogram, edges = np.histogram(frame, bins=self.bins)
-			histogram = histogram * self.normalize
+			normalize = np.max(histogram)
+			histogram = histogram / float(np.max(histogram))
 			self.histograms[key] = histogram
 		return histogram
 
@@ -49,7 +49,7 @@ class _Rasterizer:
 			yield '#'
 			# Add some gamma correction to make it prettier, then map to the
 			# RGB24 range 0..255.
-			intval = int((floatval ** 0.25) * 255)
+			intval = int(floatval * 255)
 			hexes = '0123456789abcdef'
 			hi = hexes[(intval >> 4) & 0x0F]
 			lo = hexes[intval & 0x0F]
