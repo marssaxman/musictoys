@@ -16,24 +16,15 @@
 
 import Tkinter as tk
 import argparse
-import librosa
 import sys
 import math
+import audio
 from overview import Overview
 from waveplot import Waveplot
 
+
 def next_power_of_2(n):
 	return 2 ** math.ceil(math.log(n, 2))
-
-
-class AudioTrack:
-	def __init__(self, path):
-		self.path = path
-		signal, self.samplerate = librosa.load(path, sr=44100, mono=False)
-		self.left = signal[0, :]
-		self.right = signal[1, :]
-		self.mono = librosa.to_mono(signal)
-		self.duration = len(self.mono) / float(self.samplerate)
 
 
 class UI(tk.Tk):
@@ -56,13 +47,12 @@ class UI(tk.Tk):
 		sys.exit(0)
 
 
-
 def main():
 	parser = argparse.ArgumentParser()
 	parser.add_argument("filename", type=str, help="Audio file to edit")
 	args = parser.parse_args()
 
-	signal = AudioTrack(args.filename)
+	track = audio.Track(args.filename)
 
 	root = UI()
 	layout = tk.Frame(root, borderwidth=0, highlightthickness=0)
@@ -72,9 +62,9 @@ def main():
 	layout.grid_rowconfigure(2, weight=0)
 	controls = tk.Frame(layout, borderwidth=0, highlightthickness=0)
 	controls.grid(row=0, column=0, sticky='nsew')
-	waveplot = Waveplot(layout, signal)
+	waveplot = Waveplot(layout, track)
 	waveplot.grid(row=1, column=0, sticky='nsew')
-	overview = Overview(layout, signal, height=80, bd=0)
+	overview = Overview(layout, track, height=80, bd=0)
 	overview.grid(row=2, column=0, sticky='nsew')
 	layout.pack(fill=tk.BOTH, expand=True)
 

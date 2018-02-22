@@ -62,11 +62,12 @@ class _Rasterizer:
 
 
 class Waveplot(tk.Canvas):
-	def __init__(self, container, signal, **kwargs):
+	def __init__(self, container, track, **kwargs):
 		if not 'background' in kwargs and not 'bg' in kwargs:
 			kwargs['background'] = '#FFFFFF'
 		tk.Canvas.__init__(self, container, **kwargs)
-		self._signal = signal
+		self._track = track
+		self._signal = track.signal
 		self._rasterizer = None
 		self._must_render = False
 		# Create the initial image buffer, which we will replace as soon as we
@@ -107,7 +108,7 @@ class Waveplot(tk.Canvas):
 		# per pixel we'd end up with if we displayed the whole signal at this
 		# zoom level.
 		view_fraction = end - begin
-		total_samples = len(self._signal.mono)
+		total_samples = len(self._signal)
 		view_samples = total_samples * view_fraction
 		samples_per_pixel = view_samples / width
 		step = int(samples_per_pixel)
@@ -115,7 +116,7 @@ class Waveplot(tk.Canvas):
 		bins = height + 1
 		# Divide the original signal into frames, with a lazy memoizing 
 		# histogram generator we can use for density information.
-		histograms = _FramedHistograms(self._signal.mono, step, bins)
+		histograms = _FramedHistograms(self._signal, step, bins)
 		self._rasterizer = _Rasterizer(histograms, height)
 
 	def _draw(self):
