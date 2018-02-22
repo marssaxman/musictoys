@@ -4,10 +4,6 @@ import librosa
 import time
 
 
-def time_millis():
-	return int(round(time.time() * 1000))
-
-
 class _FramedHistograms:
 	def __init__(self, signal, step, bins):
 		self.signal = signal
@@ -47,7 +43,7 @@ class _Rasterizer:
 			colors = (self._colormap[int(v)] for v in levels)
 			# Join color strings into a pixel sequence for this column.
 			pixels = " ".join(colors)
-			self._pixels[index] = pixels
+			#self._pixels[index] = pixels
 		return pixels
 
 
@@ -115,9 +111,8 @@ class Waveplot(tk.Canvas):
 			self._must_render = True
 			self.after(1, self._render)
 
-	def _render(self, skip=0, timeout=100):
+	def _render(self):
 		self._must_render = False
-		start_time = time_millis()
 		if not self._rasterizer:
 			self._gen_rasterizer()
 		begin, end = self._view_interval
@@ -127,12 +122,7 @@ class Waveplot(tk.Canvas):
 		num_frames = len(self._rasterizer)
 		indices = xrange(int(begin * num_frames), int(end * num_frames))
 		for x, frame_index in enumerate(indices):
-			pixels = self._rasterizer[(frame_index + skip) % num_frames]
-			self._image_buffer.put(pixels, ((x + skip) % num_frames,0))
-			elapsed = time_millis() - start_time
-			if elapsed > timeout:
-				self._must_render = True
-				self.after(1, lambda: self._render(skip=(skip+x)))
-				break
+			pixels = self._rasterizer[frame_index]
+			self._image_buffer.put(pixels, (x,0))
 		self.update()
 
