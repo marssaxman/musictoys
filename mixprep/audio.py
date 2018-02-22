@@ -1,6 +1,25 @@
 import librosa
 import numpy as np
 
+
+# This decorator turns a function into a lazily evaluated, memoized property,
+# where the function is invoked on first access, then replaced with its result.
+class lazy_property(object):
+	def __init__(self, function):
+		# Save the function and its name.
+		self.function = function
+		self.name = function.__name__
+	def __get__(self, obj, cls):
+		if obj is None: return None
+		# Evaluate the function, passing in 'obj', which will become 'self'
+		# while the function is evaluating.
+		value = self.function(obj)
+		# Replace this property with the value we just generated, so that
+		# the decorator instance disappears and it becomes a normal attribute.
+		setattr(obj, self.name, value)
+		return value
+
+
 # A signal is a series of samples; a one-dimensional array with a frequency
 # attribute, expressing the interval between samples.
 class Signal(np.ndarray):
@@ -16,6 +35,21 @@ class Signal(np.ndarray):
 		# the ndarray constructor, so we need to wait.
 		if obj is None: return
 		self.frequency = getattr(obj, 'frequency', None)
+
+	@lazy_property
+	def maxmag(self):
+		# Magnitude of the maximum sample value
+		return np.max(np.abs(self))
+
+	@lazy_property
+	def rms(self):
+		# Root mean square power estimation.
+		return np.sqrt(np.mean(self ** 2.0))
+
+	@lazy_property
+	def duration(self):
+		# The size, measured in seconds.
+		return float(len(self)) / self.frequency
 
 
 # A track is an audio object collected with its metadata. It begins with a
