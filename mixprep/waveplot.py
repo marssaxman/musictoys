@@ -1,15 +1,14 @@
 import Tkinter as tk
 import numpy as np
 import librosa
-import time
-
+from fast_histogram import histogram1d
 
 class _FramedHistograms:
 	def __init__(self, signal, step, bins):
 		self.signal = signal
 		self.frames = librosa.util.frame(
 				signal, frame_length=step, hop_length=step)
-		self.bins = np.linspace(-1, 1, num=bins)
+		self.bins = bins
 		self.histograms = [None] * self.frames.shape[1]
 	def __len__(self):
 		return len(self.histograms)
@@ -17,9 +16,10 @@ class _FramedHistograms:
 		histogram = self.histograms[key]
 		if histogram is None:
 			frame = self.frames[:,key]
-			histogram, edges = np.histogram(frame, bins=self.bins)
-			normalize = np.max(histogram)
-			histogram = histogram / float(np.max(histogram))
+			# histogram1d tested at roughly 4x faster than numpy.histogram;
+			# it is designed for large datasets and equally spaced bins
+			histogram = histogram1d(frame, range=(-1,1), bins=self.bins)
+			np.linalg.norm(histogram, axis=0)
 			self.histograms[key] = histogram
 		return histogram
 
