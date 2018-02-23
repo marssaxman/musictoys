@@ -19,7 +19,7 @@ class _FramedHistograms:
 			# histogram1d tested at roughly 4x faster than numpy.histogram;
 			# it is designed for large datasets and equally spaced bins
 			histogram = histogram1d(frame, range=(-1,1), bins=self.bins)
-			np.linalg.norm(histogram, axis=0)
+			histogram = histogram / float(np.max(histogram))
 			self.histograms[key] = histogram
 		return histogram
 
