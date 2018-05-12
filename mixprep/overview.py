@@ -11,11 +11,12 @@ def _framed_max_rms(signal, step):
 
 
 class Overview(tk.Canvas):
-	def __init__(self, container, signal, **kwargs):
+	def __init__(self, container, track, **kwargs):
 		if not 'background' in kwargs and not 'bg' in kwargs:
 			kwargs['background'] = '#222222'
 		tk.Canvas.__init__(self, container, **kwargs)
-		self._signal = signal
+		self._track = track
+		self._signal = track.signal
 		self.view_command = None
 		# interval represents the beginning and ending coordinates of the slice
 		# of the signal that we are highlighting, from 0..1
@@ -101,9 +102,10 @@ class Overview(tk.Canvas):
 
 		# Chop the signal halves into frames, then get the maxmag and rms value
 		# for each frame, where each frame corresponds to one pixel.
-		framelen = int(len(self._signal.mono) / float(width))
-		left_max, left_rms = _framed_max_rms(self._signal.left, framelen)
-		right_max, right_rms = _framed_max_rms(self._signal.right, framelen)
+		framelen = int(len(self._signal) / float(width))
+		left_max, left_rms = _framed_max_rms(self._signal, framelen)
+		# Hmmmm. Maybe we want access to stereo data after all. Worry later.
+		right_max, right_rms = left_max, left_rms
 		for x in xrange(width):
 			# Draw the left channel on top and the right channel below, using
 			# dark grey for the max and a lighter grey for RMS.

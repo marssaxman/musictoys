@@ -1,16 +1,14 @@
 import Tkinter as tk
 import numpy as np
 import librosa
-import time
-
+from fast_histogram import histogram1d
 
 class _FramedHistograms:
 	def __init__(self, signal, step, bins):
 		self.signal = signal
-		self.normalize = 1 / float(step)
 		self.frames = librosa.util.frame(
 				signal, frame_length=step, hop_length=step)
-		self.bins = np.linspace(-1, 1, num=bins)
+		self.bins = bins
 		self.histograms = [None] * self.frames.shape[1]
 	def __len__(self):
 		return len(self.histograms)
@@ -18,8 +16,10 @@ class _FramedHistograms:
 		histogram = self.histograms[key]
 		if histogram is None:
 			frame = self.frames[:,key]
-			histogram, edges = np.histogram(frame, bins=self.bins)
-			histogram = histogram * self.normalize
+			# histogram1d tested at roughly 4x faster than numpy.histogram;
+			# it is designed for large datasets and equally spaced bins
+			histogram = histogram1d(frame, range=(-1,1), bins=self.bins)
+			histogram = histogram / float(np.max(histogram))
 			self.histograms[key] = histogram
 		return histogram
 
@@ -28,31 +28,46 @@ class _Rasterizer:
 	def __init__(self, source, height):
 		self._source = source
 		self._pixels = [None] * len(source)
-		self._rowspec = "#{:0>2x}{:0>2x}{:0>2x} " * height
 	def __len__(self):
 		return len(self._pixels)
 	def __getitem__(self, index):
 		pixels = self._pixels[index]
 		if pixels is None:
-			levels = self._source[index]
-			# Add some gamma correction to make it prettier
-			levels = levels ** (0.25)
-			# multiply our 0..1 level values by 255 and convert to uint8,
-			# then repeat each element three times for RGB
-			levels = np.asarray(levels * 255, dtype=np.uint8).repeat(3)
-			# apply all the channel values to create one big string param
-			pixels = self._rowspec.format(*levels)
-			# that's the weirdness PhotoImage.put() calls for!
+			pixels = ''.join(self._doformat(self._source[index]))
 			self._pixels[index] = pixels
 		return pixels
+	def _doformat(self, levels):
+		# Emit a sequence of ASCII values corresponding to the HTML color
+		# literals which would produce a grey tone whose brightness corresponds
+		# to the input value's position in the range 0..1. This is messy
+		# because it is speed-critical. By constructing a string from this
+		# generator using join(), we only have to perform one allocation. Why
+		# on earth are we constructing a string at all? Because that's the only
+		# form of input PhotoImage.put() accepts.
+		for floatval in levels:
+			yield ' '
+			yield '#'
+			# Add some gamma correction to make it prettier, then map to the
+			# RGB24 range 0..255.
+			intval = int(floatval * 255)
+			hexes = '0123456789abcdef'
+			hi = hexes[(intval >> 4) & 0x0F]
+			lo = hexes[intval & 0x0F]
+			yield hi
+			yield lo
+			yield hi
+			yield lo
+			yield hi
+			yield lo
 
 
 class Waveplot(tk.Canvas):
-	def __init__(self, container, signal, **kwargs):
+	def __init__(self, container, track, **kwargs):
 		if not 'background' in kwargs and not 'bg' in kwargs:
 			kwargs['background'] = '#FFFFFF'
 		tk.Canvas.__init__(self, container, **kwargs)
-		self._signal = signal
+		self._track = track
+		self._signal = track.signal
 		self._rasterizer = None
 		self._must_render = False
 		# Create the initial image buffer, which we will replace as soon as we
@@ -93,7 +108,7 @@ class Waveplot(tk.Canvas):
 		# per pixel we'd end up with if we displayed the whole signal at this
 		# zoom level.
 		view_fraction = end - begin
-		total_samples = len(self._signal.mono)
+		total_samples = len(self._signal)
 		view_samples = total_samples * view_fraction
 		samples_per_pixel = view_samples / width
 		step = int(samples_per_pixel)
@@ -101,7 +116,7 @@ class Waveplot(tk.Canvas):
 		bins = height + 1
 		# Divide the original signal into frames, with a lazy memoizing 
 		# histogram generator we can use for density information.
-		histograms = _FramedHistograms(self._signal.mono, step, bins)
+		histograms = _FramedHistograms(self._signal, step, bins)
 		self._rasterizer = _Rasterizer(histograms, height)
 
 	def _draw(self):

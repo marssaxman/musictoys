@@ -85,6 +85,8 @@
 
 [Pattern induction and matching in music signals](http://www.cs.tut.fi/sgn/arg/klap/patterns.pdf)
 
+[Creating Music by Listening: ch 4, Musical Structures](http://web.media.mit.edu/~tristan/phd/dissertation/chapter4.html#x1-450004)
+
 
 
 #Generative Algorithms
