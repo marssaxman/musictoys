@@ -259,6 +259,8 @@ class Wave(Codec):
             nchannels, _, samplerate, nframes, _, _ = wp.getparams()
             frames = wp.readframes(nframes * nchannels)
             data = np.fromstring(frames, dtype=dtype)
+            if nchannels > 1:
+                data = data.reshape((nchannels, nframes))
             return data, samplerate
         finally:
             wp.close()
