@@ -1,14 +1,40 @@
 """audiofile reads audio files, combing python libraries and external tools"""
 
 import collections
-import os, subprocess
+import os
+import subprocess
 import tempfile
 import soundfile
+import struct
+import wave
+import numpy as np
 
 from collections import namedtuple
 Info = namedtuple('Info', 'format dtype samplerate channels')
 Clip = namedtuple('Clip', 'data samplerate')
-Format = namedtuple('Format', 'name description subtypes extensions')
+Format = namedtuple('Format', 'name description extensions')
+
+FORMATS = {f.name: f for f in [
+    Format('AAC', "Advanced Audio Coding", {'.aac'}),
+    Format('AIFC', "", {'.aifc'}),
+    Format('AIFF', "Audio IFF", {'.aiff'}),
+    Format('AU', "Sun AU", {'.au'}),
+    Format('AVI', "Audio Video Interlaced", {'.avi'}),
+    Format('CAF', "Apple Core Audio Format", {'.caf'}),
+    Format('FLAC', "FLAC", {'.flac'}),
+    Format('M4A', "MPEG-4 Audio Lossless", {'.m4a', '.m4r'}),
+    Format('M4B', "MPEG-4 Audio Books", {'.m4b'}),
+    Format('MP2', "MPEG audio layer 2", {'.mp2'}),
+    Format('MP3', "MPEG audio layer 3", {'.mp3'}),
+    Format('MP4', "MPEG-4 Part 14", {'.mp4'}),
+    Format('OGG', "Ogg", {'.ogg'}),
+    Format('OGA', "Ogg Audio", {'.oga'}),
+    Format('MOGG', "Multitrack Ogg", {'.mogg'}),
+    Format('OPUS', "Ogg Opus", {'.opus'}),
+    Format('WAV', "Waveform Audio", {'.wav'}),
+    Format('WEBM', "WebM", {'.webm'}),
+    Format('WMA', "Windows Media Audio", {'.wma'}),
+]}
 
 
 class lazy_property(object):
@@ -17,13 +43,15 @@ class lazy_property(object):
     The target function will be invoked on its first access, then replaced
     with its result value and never executed again.
     """
+
     def __init__(self, function):
         # Save the function and its name.
         self.function = function
         self.name = function.__name__
 
     def __get__(self, obj, cls):
-        if obj is None: return None
+        if obj is None:
+            return None
         # Evaluate the function, passing in 'obj', which will become 'self'
         # while the function is evaluating.
         value = self.function(obj)
@@ -31,6 +59,7 @@ class lazy_property(object):
         # the decorator instance disappears and it becomes a normal attribute.
         setattr(obj, self.name, value)
         return value
+
 
 def execpipe(*args):
     pipe = subprocess.PIPE
@@ -43,80 +72,52 @@ def execpipe(*args):
 
 
 class FormatError(Exception):
-    def __init__(self, message, format):
+    def __init__(self, message, format=None):
         super(FormatError, self).__init__(message)
         self.format = format
 
 
 class SubtypeError(Exception):
-    def __init__(self, message, subtype):
+    def __init__(self, message, subtype=None):
         super(SubtypeError, self).__init__(message)
         self.subtype = subtype
 
 
 class Codec(object):
     """Base class for objects which read, write, and identify sound files."""
-    name = "unimplemented"
 
     def __init__(self):
         pass
 
+    def formats(self):
+        return []
+
     def read(self, file):
         if os.path.isfile(file):
-            raise FormatError("Codec %s cannot read %s" % (self.name, file))
+            raise FormatError("Cannot read %s" % file)
         else:
             raise FileNotFoundError(file)
 
     def write(self, file, clip):
         dtype = clip.data.dtype
-        raise FormatError("Codec %s cannot write '%s'" % (self.name, dtype))
+        raise FormatError("Cannot write '%s' to %s" % (dtype, file))
 
     def info(self, file):
         if os.path.isfile(file):
-            raise FormatError("Codecx % cannot inspect %s" % (self.name, file))
+            raise FormatError("Cannot inspect %s" % (file))
         else:
             raise FileNotFoundError(file)
 
 
-class Dispatch(Codec):
-    """Wrapper which distributes requests to a list of codec implementations.
+class Soundfile(Codec):
 
-    Each codec is expected to provide a list of formats it supports, and each
-    format must supply a list of file extensions which might represent it.
-    """
+    def __init__(self):
+        super(Soundfile, self).__init__()
 
-    def __init__(self, codecs):
-        super(Dispatch, self).__init__()
-        self.codecs = codecs
-        self.dispatch = dict()
-
-    @lazy_property
-    def formats(self):
-        found = list()
-        for codec in self.codecs:
-            for fmt in codec.formats:
-                if fmt.name in self.dispatch:
-                    continue
-                self.dispatch[fmt.name] = codec
-                found.append(fmt)
-        return found
-
-    @lazy_property
-    def extensions(self):
-        return []
-
-
-class Lib_soundfile(Codec):
-    name = "soundfile"
-
-    @lazy_property
     def formats(self):
         # Get a list of the formats supported by the soundfile lib.
-        formats = list()
-        for name, desc in soundfile.available_formats().iteritems():
-            subtypes = soundfile.available_subtypes(name)
-            formats.append(Format(name, desc, subtypes, '.' + name.lower()))
-        return formats
+        names = soundfile.available_formats().iterkeys()
+        return [FORMATS[n] for n in names if n in FORMATS]
 
     def read(self, file):
         data, samplerate = soundfile.read(file)
@@ -129,20 +130,21 @@ class Lib_soundfile(Codec):
     def info(self, file):
         info = soundfile.info(file)
         return Info(
-            name = info.name,
-            format = info.format,
-            dtype = info.subtype,
-            samplerate = info.samplerate,
-            channels = info.channels,
-            length = info.frames,
-            duration = info.frames / float(info.samplerate)
+            name=info.name,
+            format=info.format,
+            dtype=info.subtype,
+            samplerate=info.samplerate,
+            channels=info.channels,
+            length=info.frames,
+            duration=info.frames / float(info.samplerate)
         )
 
 
-class Exec_ffmpeg(Codec):
-    name = "ffmpeg"
+class Ffmpeg(Codec):
 
-    @lazy_property
+    def __init__(self):
+        super(Ffmpeg, self).__init__()
+
     def formats(self):
         output = execpipe('ffmpeg', '-formats')
         # The ffmpeg -formats output begins each line with some leading
@@ -156,9 +158,9 @@ class Exec_ffmpeg(Codec):
             if not fields[0] in ['D', 'E', 'DE']:
                 continue
             name = fields[1]
-            extension = "." + name.lower()
-            description = " ".join(fields[2:])
-            out.append(Format(name, description, (), []))
+            fmt = FORMATS.get(name.upper())
+            if fmt:
+                out.append(fmt)
         return out
 
     def read(self, file):
@@ -171,34 +173,39 @@ class Exec_ffmpeg(Codec):
             os.remove(temp)
 
 
+class Afconvert(Codec):
+    apple_aliases = {
+        'adts': 'AAC', 'm4af': 'M4A', 'm4bf': 'M4B', 'caff': 'CAF',
+        'MPG1': 'MP1', 'MPG2': 'MP2', 'MPG3': 'MP3', 'mp4f': 'MP4',
+        'WAVE': 'WAV',
+    }
 
-class Exec_afconvert(Codec):
-    name = "afconvert"
+    def __init__(self):
+        super(Afconvert, self).__init__()
 
-    @lazy_property
     def formats(self):
+        fmts = []
         try:
             output = execpipe('afconvert', '--help-formats')
-            # afconvert documentation here:
-            # https://ss64.com/osx/afconvert.html
-            # Example output:
-            # 'AIFF' = AIFF (.aiff, .aif)
-            #               data_formats: I8 BEI16 BEI24 BEI32
-            # We'll simply take everything we find between parentheses.
-            extensions = []
-            for line in output.split('\n'):
-                line = line.strip()
-                if not line or line[-1] != ')':
-                    continue
-                extpos = line.rfind('(')
-                if extpos == -1:
-                    continue
-                extensions.extend(line[extpos:-1].lower().split(", "))
-                print "afconvert extensions: %s" % extensions
-            return {e: _afconvert_read for e in extensions}
         except:
-            return dict()
-        return []
+            output = ""
+            pass
+        # afconvert documentation here:
+        # https://ss64.com/osx/afconvert.html
+        # Example output:
+        # 'AIFF' = AIFF (.aiff, .aif)
+        #               data_formats: I8 BEI16 BEI24 BEI32
+        # The line begins with a four-char code in single quotes, then.
+        # This is Apple's version of the format name.
+        for line in output.splitlines():
+            line = line.strip()
+            if line[0] == "'" and line[5] == "'":
+                name = line[1:5]
+                name = Afconvert.apple_aliases.get(name, name)
+                fmt = FORMATS.get(name)
+                if fmt:
+                    fmts.append(fmts)
+        return fmts
 
     def read(self, file):
         # use ffmpeg to convert the input file to a temporary wav file we can read
@@ -211,24 +218,113 @@ class Exec_afconvert(Codec):
             os.remove(temp)
 
 
-class Lib_wave(Codec):
-    name = "wave"
+class Wave(Codec):
 
-    @lazy_property
+    def __init__(self):
+        super(Wave, self).__init__()
+
     def formats(self):
-        return []
+        return [FORMATS['WAV']]
+
+    def read(self, file):
+        # Python's WAV API can tell us the sample width, but can't tell us
+        # whether it is big or little endian, integer or float; we'll read the
+        # WAV file header ourselves first to figure that out.
+        with open(file, 'rb') as fp:
+            riffstruct = "<4sI4s"
+            bytes = fp.read(struct.calcsize(riffstruct))
+            ChunkID, ChunkSize, Format = struct.unpack(riffstruct, bytes)
+            if ChunkID == 'RIFF' and Format == 'WAVE':
+                endian = "<"
+            elif ChunkID == 'FFIR' and Format == 'EVAW':
+                endian = ">"
+            else:
+                raise ValueError()
+            wavstruct = endian + "4sIHHIIHH"
+            bytes = fp.read(struct.calcsize(wavstruct))
+            (
+                Subchunk1ID, Subchunk1Size, AudioFormat, NumChannels,
+                SampleRate, ByteRate, BlockAlign, BitsPerSample
+            ) = struct.unpack(wavstruct, bytes)
+
+        dtype = np.dtype(endian + {
+            # PCM is format 1.
+            1: {8: 'u1', 16: 'i2', 24: 'i3', 32: 'i4'},
+            # IEEE float is format 3.
+            3: {16: 'f2', 32: 'f4', 64: 'f8'}
+        }[AudioFormat][BitsPerSample])
+
+        try:
+            wp = wave.open(file, 'rb')
+            nchannels, _, samplerate, nframes, _, _ = wp.getparams()
+            frames = wp.readframes(nframes * nchannels)
+            data = np.fromstring(frames, dtype=dtype)
+            return data, samplerate
+        finally:
+            wp.close()
 
 
-_codecs = [Exec_ffmpeg(), Exec_afconvert(), Lib_soundfile(), Lib_wave()]
-_dispatch = Dispatch(_codecs)
+class Dispatch(Codec):
+    """Wrapper which distributes requests to a list of codec implementations.
+
+    Each codec is expected to provide a list of formats it supports, and each
+    format must supply a list of file extensions which might represent it.
+    """
+
+    def __init__(self, codec_classes):
+        super(Dispatch, self).__init__()
+        self._codec_classes = codec_classes
+        self._formats = None
+        self._extensions = None
+
+    def formats(self):
+        if self._formats:
+            return self._formats
+        self._formats = dict()
+        # Attempt to instantiate each codec and query it. Some will fail,
+        # because they are not supported on the current platform.
+        for cls in self._codec_classes:
+            try:
+                codec = cls()
+                self._formats.update({f.name: codec for f in codec.formats()})
+            except:
+                pass
+        return self._formats
+
+    def extensions(self):
+        if self._extensions:
+            return self._extensions
+        self._extensions = dict()
+        # Build a table mapping file extensions to the codecs supporting them.
+        for fmtname, codec in self.formats().iteritems():
+            fmt = FORMATS[fmtname]
+            for ext in FORMATS[fmtname].extensions:
+                self._extensions[ext] = codec
+        return self._extensions
+
+    def read(self, file):
+        ext = os.path.splitext(file)[1].lower()
+        codec = extensions().get(ext)
+        return codec.read(file) if codec else super(Codec, self).read(file)
+
+    def write(self, file, clip):
+        ext = os.path.splitext(file)[1].lower()
+        codec = extensions().get(ext)
+        if codec:
+            codec.write(file, clip)
+        else:
+            super(Codec, self).write(file, clip)
+
+
+_dispatch = Dispatch([Ffmpeg, Afconvert, Soundfile, Wave])
 
 
 def formats():
-    return _dispatch.formats
+    return _dispatch.formats()
 
 
 def extensions():
-    return _dispatch.extensions
+    return _dispatch.extensions()
 
 
 def read(file):
@@ -260,10 +356,3 @@ def write(file, (data, samplerate)):
 
 def info(file):
     return dispatch.info(file)
-
-
-
-
-
-
-
