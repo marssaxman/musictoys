@@ -6,7 +6,6 @@ import subprocess
 import tempfile
 import soundfile
 import struct
-import wave
 import numpy as np
 
 from collections import namedtuple
@@ -16,7 +15,7 @@ Format = namedtuple('Format', 'name description extensions')
 
 FORMATS = {f.name: f for f in [
     Format('AAC', "Advanced Audio Coding", {'.aac'}),
-    Format('AIFC', "", {'.aifc'}),
+    Format('AIFC', "Compressed AIFF", {'.aifc'}),
     Format('AIFF', "Audio IFF", {'.aiff'}),
     Format('AU', "Sun AU", {'.au'}),
     Format('AVI', "Audio Video Interlaced", {'.avi'}),
@@ -227,43 +226,49 @@ class Wave(Codec):
         return [FORMATS['WAV']]
 
     def read(self, file):
-        # Python's WAV API can tell us the sample width, but can't tell us
-        # whether it is big or little endian, integer or float; we'll read the
-        # WAV file header ourselves first to figure that out.
-        with open(file, 'rb') as fp:
-            riffstruct = "<4sI4s"
-            bytes = fp.read(struct.calcsize(riffstruct))
-            ChunkID, ChunkSize, Format = struct.unpack(riffstruct, bytes)
-            if ChunkID == 'RIFF' and Format == 'WAVE':
-                endian = "<"
-            elif ChunkID == 'FFIR' and Format == 'EVAW':
-                endian = ">"
-            else:
-                raise ValueError()
-            wavstruct = endian + "4sIHHIIHH"
-            bytes = fp.read(struct.calcsize(wavstruct))
-            (
-                Subchunk1ID, Subchunk1Size, AudioFormat, NumChannels,
-                SampleRate, ByteRate, BlockAlign, BitsPerSample
-            ) = struct.unpack(wavstruct, bytes)
+        # Read the contents of the file. We'll parse its RIFF tags and find
+        # the WAV data to return.
+        buffer = np.fromfile(file, dtype=np.uint8)
+        # The file should begin with 'RIFF', unless we have a problem with
+        # endianness.
+        rifftag, _ = struct.unpack("<4sI", buffer[:8])
+        if rifftag == 'RIFF':
+            endian = "<%s"
+        elif rifftag == 'FFIR' or rifftag == 'RIFX':
+            endian = ">%s"
+        else:
+            raise ValueError()
+        def unpack(fmt, bytes):
+            return struct.unpack(endian%fmt, bytes)
+        # The rest of the header should tell us how long the WAV data is.
+        chunksize, waveid = unpack("I4s", buffer[4:12])
+        assert waveid == "WAVE"
+        # The wave buffer should be full of chunks: a 4cc and a length.
+        limit = 8 + chunksize
+        off = 12
+        while off < limit:
+            ckid, cksize = unpack("4sI", buffer[off:off+8])
+            off += 8
+            if ckid == "fmt ":
+                (audioformat, nchannels, samplerate, _, _, samplewidth
+                        ) = unpack("HHIIHH", buffer[off:off+16])
+            elif ckid == "data":
+                data = buffer[off:off+cksize]
+                pass
+            off += cksize
 
-        dtype = np.dtype(endian + {
-            # PCM is format 1.
-            1: {8: 'u1', 16: 'i2', 24: 'i3', 32: 'i4'},
-            # IEEE float is format 3.
-            3: {16: 'f2', 32: 'f4', 64: 'f8'}
-        }[AudioFormat][BitsPerSample])
-
-        try:
-            wp = wave.open(file, 'rb')
-            nchannels, _, samplerate, nframes, _, _ = wp.getparams()
-            frames = wp.readframes(nframes * nchannels)
-            data = np.fromstring(frames, dtype=dtype)
-            if nchannels > 1:
-                data = data.reshape((nchannels, nframes))
-            return data, samplerate
-        finally:
-            wp.close()
+        # Reinterpret the bytes we found in some more useful datatype.
+        data = data.astype(
+                np.dtype(endian % {
+                        # PCM is format 1.
+                        1: {8: 'u1', 16: 'i2', 32: 'i4'},
+                        # IEEE float is format 3.
+                        3: {16: 'f2', 32: 'f4', 64: 'f8'}
+                }[audioformat][samplewidth])
+        )
+        if nchannels > 1:
+            data = data.reshape((nchannels, -1))
+        return data, samplerate
 
 
 class Dispatch(Codec):
