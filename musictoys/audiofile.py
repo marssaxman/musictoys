@@ -22,13 +22,8 @@ class FormatError(Exception):
         self.format = format
 
 
-def formats():
-    _init()
-    global _formats
-    return _formats.keys()
-
-
 def extensions():
+    """List the audio file extensions we recognize."""
     _init()
     global _extensions
     return _extensions.keys()
@@ -69,7 +64,7 @@ FORMATS = {n: _Format(n, d, x) for n, d, x in [
     ('AAC', "Advanced Audio Coding", {'.aac'}),
     ('AIFC', "Compressed AIFF", {'.aifc'}),
     ('AIFF', "Audio IFF", {'.aiff'}),
-    ('AU', "Sun AU", {'.au'}),
+    ('AU', "Sun AU", {'.au', '.snd'}),
     ('AVI', "Audio Video Interlaced", {'.avi'}),
     ('CAF', "Apple Core Audio Format", {'.caf'}),
     ('FLAC', "FLAC", {'.flac'}),
@@ -114,17 +109,6 @@ def _init():
 def _dispatch(file):
     _init()
     return _extensions[os.path.splitext(file)[1].lower()]
-
-
-def _fail_formats():
-    return []
-
-
-def _fail_read(file):
-    if os.path.isfile(file):
-        raise FormatError("Cannot read %s" % file)
-    else:
-        raise FileNotFoundError(file)
 
 
 def _fail_write(file, clip):
@@ -177,14 +161,8 @@ def _ffmpeg():
         return out
 
     def _read(file):
-        try:
-            fd, temp = tempfile.mkstemp(suffix='.wav')
-            _execpipe('ffmpeg', '-v', '1', '-y', '-i', file,
-                    '-vn', '-f', 'wav', temp)
-            return _wav_read(temp)
-        finally:
-            os.close(fd)
-            os.remove(temp)
+        return _subproc_read('ffmpeg', '-v', '1', '-y', '-i', file,
+                    '-vn', '-f', 'wav')
 
     return _Codec(_formats, _read, _fail_write)
 
@@ -224,14 +202,7 @@ def _afconvert():
         return fmts
 
     def _read(file):
-        # convert the input file to a temporary wav file we can read
-        try:
-            fd, temp = tempfile.mkstemp(suffix='.wav')
-            _execpipe('afconvert', '-d', 'LEI16', '-f', 'WAVE', file, temp)
-            return _wav_read(temp)
-        finally:
-            os.close(temp)
-            os.remove(temp)
+        return _subproc_read('afconvert', '-d', 'LEI16', '-f', 'WAVE', file)
 
     return _Codec(_formats, _read, _fail_write)
 
@@ -242,16 +213,6 @@ def _builtin():
         return [FORMATS['WAV']]
 
     return _Codec(_formats, _wav_read, _fail_write)
-
-
-def _execpipe(*args):
-    pipe = subprocess.PIPE
-    proc = subprocess.Popen(args, stdin=pipe, stdout=pipe, stderr=pipe)
-    output, _ = proc.communicate()
-    retcode = proc.returncode
-    if retcode:
-        raise subprocess.CalledProcessError(retcode, args, output=output)
-    return output
 
 
 def _wav_read(file):
@@ -299,4 +260,25 @@ def _wav_read(file):
     return data, samplerate
 
 
+def _execpipe(*args):
+    pipe = subprocess.PIPE
+    proc = subprocess.Popen(args, stdin=pipe, stdout=pipe, stderr=pipe)
+    output, _ = proc.communicate()
+    retcode = proc.returncode
+    if retcode:
+        raise subprocess.CalledProcessError(retcode, args, output=output)
+    return output
+
+
+def _subproc_read(*args):
+    # convert the input file to a temporary wav file
+    # read in the contents of the temp and return that
+    try:
+        fd, temp = tempfile.mkstemp(suffix='.wav')
+        args = list(args) + [temp]
+        _execpipe(*args)
+        return _wav_read(temp)
+    finally:
+        os.close(fd)
+        os.remove(temp)
 
