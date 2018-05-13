@@ -13,7 +13,6 @@ from collections import namedtuple
 
 # Public API
 
-Info = namedtuple('Info', 'format dtype samplerate channels')
 Clip = namedtuple('Clip', 'data samplerate')
 
 
@@ -60,15 +59,11 @@ def write(file, clip):
     _dispatch(file).write(file, clip)
 
 
-def info(file):
-    return _dispatch(file).info(file)
-
-
 # Internal implementation
 
 
 _Format = namedtuple('Format', 'name description extensions')
-_Codec = namedtuple('_Codec', 'formats read write info')
+_Codec = namedtuple('_Codec', 'formats read write')
 
 FORMATS = {n: _Format(n, d, x) for n, d, x in [
     ('AAC', "Advanced Audio Coding", {'.aac'}),
@@ -137,13 +132,6 @@ def _fail_write(file, clip):
     raise FormatError("Cannot write '%s' to %s" % (dtype, file))
 
 
-def _fail_info(file):
-    if os.path.isfile(file):
-        raise FormatError("Cannot inspect %s" % (file))
-    else:
-        raise FileNotFoundError(file)
-
-
 def _soundfile():
     import soundfile
 
@@ -162,19 +150,8 @@ def _soundfile():
         data, samplerate = clip
         soundfile.write(file, data, samplerate)
 
-    def _info(file):
-        info = soundfile.info(file)
-        return Info(
-            name=info.name,
-            format=info.format,
-            dtype=info.subtype,
-            samplerate=info.samplerate,
-            channels=info.channels,
-            length=info.frames,
-            duration=info.frames / float(info.samplerate)
-        )
 
-    return _Codec(_formats, _read, _write, _info)
+    return _Codec(_formats, _read, _write)
 
 
 def _ffmpeg():
@@ -209,7 +186,7 @@ def _ffmpeg():
             os.close(fd)
             os.remove(temp)
 
-    return _Codec(_formats, _read, _fail_write, _fail_info)
+    return _Codec(_formats, _read, _fail_write)
 
 
 def _afconvert():
@@ -256,7 +233,7 @@ def _afconvert():
             os.close(temp)
             os.remove(temp)
 
-    return _Codec(_formats, _read, _fail_write, _fail_info)
+    return _Codec(_formats, _read, _fail_write)
 
 
 def _builtin():
@@ -264,7 +241,7 @@ def _builtin():
     def _formats():
         return [FORMATS['WAV']]
 
-    return _Codec(_formats, _wav_read, _fail_write, _fail_info)
+    return _Codec(_formats, _wav_read, _fail_write)
 
 
 def _execpipe(*args):
