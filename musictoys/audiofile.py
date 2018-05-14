@@ -1,13 +1,8 @@
 """audiofile reads audio files, combing python libraries and external tools"""
 
-# todo: conditionally import soundfile
-# also try audioread
-
-import collections
 import os
-import subprocess
-import tempfile
-import struct
+import subprocess, tempfile
+import struct, wave
 import numpy as np
 from collections import namedtuple
 
@@ -212,7 +207,7 @@ def _builtin():
     def _formats():
         return [FORMATS['WAV']]
 
-    return _Codec(_formats, _wav_read, _fail_write)
+    return _Codec(_formats, _wav_read, _wav_write)
 
 
 def _wav_read(file):
@@ -258,6 +253,31 @@ def _wav_read(file):
     if nchannels > 1:
         data = data.reshape((nchannels, -1))
     return data, samplerate
+
+
+def _wav_write(file, data, samplerate):
+    # Generate a WAV header for this audio data and write it all to disk.
+    data = np.asarray(data)
+    assert data.ndim <= 2
+    # We expect [channel, sample] ordering, but the data may be transposed.
+    if data.ndim == 2:
+        if data.shape[0] > data.shape[1]:
+            data = data.transpose()
+        channels = data.shape[0]
+    else:
+        channels = 1
+    # For the time being we'll always write 16-bit integer samples, but in the
+    # future it would be nice to retain whatever format we've been provided.
+    try:
+        wf = wave.open(path, 'wb')
+        wf.setnchannels(channels)
+        wf.setsampwidth(2)
+        wf.setframerate(int(samplerate))
+        samples = (data * np.iinfo(np.int16).max).astype('<i2')
+        wf.writeframesraw(samples.tobytes())
+        wf.writeframes('')
+    finally:
+        wf.close()
 
 
 def _execpipe(*args):
