@@ -1,5 +1,11 @@
 """audiofile reads audio files, combing python libraries and external tools"""
 
+# todo:
+# use wavio if available
+# call out to sox if present
+# implement subproc_write
+
+
 import os
 import subprocess, tempfile
 import struct, wave

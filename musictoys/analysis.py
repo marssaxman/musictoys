@@ -1,5 +1,6 @@
 import numpy as np
 # consider doing away with this dependency
+# alternately, try a series of imports: resampy, scipy, librosa, etc?
 from samplerate import resample
 
 
