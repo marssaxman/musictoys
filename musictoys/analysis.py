@@ -1,8 +1,5 @@
 import numpy as np
-# consider doing away with this dependency
-# alternately, try a series of imports: resampy, scipy, librosa, etc?
-from samplerate import resample
-
+from resample import resample
 
 def normalize(signal, samplerate):
     # Whatever we're working with, it should become a numpy array.
@@ -25,7 +22,7 @@ def normalize(signal, samplerate):
         signal = signal.astype(np.float32)
     # Resample down to no more than 22050 Hz.
     if samplerate > 22050:
-        signal = resample(signal, 22050.0 / samplerate, 'sinc_fastest')
+        signal = resample(signal, samplerate, 22050)
         samplerate = 22050
     return signal, samplerate
 
