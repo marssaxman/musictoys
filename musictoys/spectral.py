@@ -76,15 +76,17 @@ def crest(spec):
         factor by which the peak frequency exceeds the average
 
     """
+    magspec = spec / np.max(spec, axis=-1)[:,None]
     eps = np.finfo(spec.dtype).eps
-    return spec.max(axis=-1) / (spec.mean(axis=-1) + eps)
+    return np.max(magspec, axis=-1) / (np.mean(magspec, axis=-1) + eps)
 
 
 def entropy(spec):
-    """Entropy represents the peakiness of the spectrum distribution.
+    """Entropy represents the complexity of a spectrum distribution.
 
-    Values will be higher for flatter spectra and lower for spectra with
-    multiple distinct peaks.
+    High entropy is associated with flatter, less distinct spectra, and lower
+    entropy correlates with the peakiness of the distribution, spectra with
+    multiple distinctly prominent frequencies.
 
     Parameters
     ----------
@@ -101,7 +103,7 @@ def entropy(spec):
     return -np.sum(spec * np.log2(spec + eps), axis=-1) / (scale + eps)
 
 
-def flatness(spec):
+def flatness(spec, power=1.0):
     """Flatness is the ratio of the geometric to the arithmetic mean.
 
     A harmonic signal tends to have low flatness, while noisy signals are
@@ -111,14 +113,18 @@ def flatness(spec):
     ----------
     spec : np.ndarray [shape=(frames, bins)]
         spectrogram
+    power : float > 0
+        Exponent for the magnitude spectrum.
+        Typically power spectrograms are most useful for spectral flatness.
 
     Returns
     -------
     flatness : np.ndarray [shape=(frames)]
         a measure in the range 0..1 for each frame
     """
-    geometric = np.exp(np.mean(np.log(spec), axis=-1))
-    arithmetic = np.mean(spec, axis=-1)
+    scaled = spec ** power
+    geometric = np.exp(np.mean(np.log(scaled), axis=-1))
+    arithmetic = np.mean(scaled, axis=-1)
     eps = np.finfo(arithmetic.dtype).eps
     return geometric / (arithmetic + eps)
 
@@ -142,12 +148,27 @@ def rolloff(spec, samplerate, fraction=0.9):
 
     """
     assert 0.0 < fraction < 1.0
-    total = np.cumsum(spec, axis=-1)
-    threshold = fraction * total[-1]
-    bins = np.where(total < threshold, np.nan, 1.0)
+    total_energy = np.cumsum(spec, axis=-1)
+    threshold = fraction * total_energy[:,-1]
+    mask = np.where(total_energy >= threshold[:,None], 1, np.nan)
     freqs = np.linspace(0, samplerate / 2.0, spec.shape[-1], endpoint=True)
-    return np.nanmin(bins * freqs, axis=-1)
+    return np.nanmin(mask * freqs, axis=-1, keepdims=True)
 
 
-# There is a good explanations of other features worth considering here:
-# http://docs.twoears.eu/en/latest/afe/available-processors/spectral-features/
+def variance(spec):
+    """Compute the variance of frequency bin levels across a spectrum..
+
+    Parameters
+    ----------
+    spec : np.ndarray [shape=(frames, bins)]
+        spectrogram
+
+    Returns
+    -------
+    variance : np.ndarray [shape=(frames)]
+        average variance from the mean for each frame
+
+    """
+    return np.var(np.abs(spec), axis=-1)
+
+
