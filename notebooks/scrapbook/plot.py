@@ -43,7 +43,7 @@ def line(samples, x=None, y=None):
 
 def _yscale(data, y):
     if y is None:
-        y = np.arange(0, data.shape[1])
+        y = np.arange(0, 1+data.shape[1])
         hide_yticks()
     return y
 
