@@ -7,7 +7,7 @@ plt.rc('figure', figsize=(16,3))
 plt.rc('image', aspect='auto', interpolation='bicubic')
 
 
-def _hide_xticks():
+def hide_xticks():
     plt.tick_params(
         axis='x',         # changes apply to the specified axis
         which='both',      # both major and minor ticks are affected
@@ -16,7 +16,7 @@ def _hide_xticks():
         labelbottom=False) # labels along the bottom edge are of
 
 
-def _hide_yticks():
+def hide_yticks():
     plt.tick_params(
         axis='y',          # changes apply to the specified axis
         which='both',      # both major and minor ticks are affected
@@ -28,7 +28,7 @@ def _hide_yticks():
 def _xscale(data, x):
     if x is None:
         x = np.arange(0, data.shape[0])
-        _hide_xticks()
+        hide_xticks()
     if isinstance(x, float) or isinstance(x, int):
         x = np.arange(0, data.shape[0]) / float(x)
     return x
@@ -44,7 +44,7 @@ def line(samples, x=None, y=None):
 def _yscale(data, y):
     if y is None:
         y = np.arange(0, data.shape[1])
-        _hide_yticks()
+        hide_yticks()
     return y
 
 
