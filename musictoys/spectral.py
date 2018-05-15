@@ -1,9 +1,6 @@
 import numpy as np
 
 
-EPS = np.finfo(dtype).eps
-
-
 def centroid(spec, samplerate):
     """The centroid is the magnitude-weighted average frequency.
 
@@ -27,7 +24,8 @@ def centroid(spec, samplerate):
     assert np.all(spec >= 0)
     freqs = np.linspace(0, samplerate / 2.0, spec.shape[-1], endpoint=True)
     centroids = np.sum(freqs[np.newaxis,:] * spec[:,:], axis=-1)
-    return centroids / (spec.sum(axis=-1) + EPS)
+    eps = np.finfo(spec.dtype).eps
+    return centroids / (spec.sum(axis=-1) + eps)
 
 
 def spread(spec, samplerate):
@@ -75,7 +73,8 @@ def crest(spec):
         factor by which the peak frequency exceeds the average
 
     """
-    return spec.max(axis=-1) / (spec.mean(axis=-1) + EPS)
+    eps = np.finfo(spec.dtype).eps
+    return spec.max(axis=-1) / (spec.mean(axis=-1) + eps)
 
 
 def entropy(spec):
@@ -95,7 +94,8 @@ def entropy(spec):
         noisiness of the spectral distribution
     """
     scale = np.log2(spec.shape[-1])
-    return -np.sum(spec * np.log2(spec + EPS), axis=-1) / (scale + EPS)
+    eps = np.finfo(spec.dtype).eps
+    return -np.sum(spec * np.log2(spec + eps), axis=-1) / (scale + eps)
 
 
 def flatness(spec):
@@ -114,9 +114,10 @@ def flatness(spec):
     flatness : np.ndarray [shape=(frames)]
         a measure in the range 0..1 for each frame
     """
-    geometric = np.exp(np.mean(np.log(spec), axis=-1)
+    geometric = np.exp(np.mean(np.log(spec), axis=-1))
     arithmetic = np.mean(spec, axis=-1)
-    return geometric / (arithmetic + EPS)
+    eps = np.finfo(arithmetic.dtype).eps
+    return geometric / (arithmetic + eps)
 
 
 def rolloff(spec, samplerate, fraction=0.9):
