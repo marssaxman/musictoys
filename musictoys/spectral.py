@@ -55,7 +55,8 @@ def spread(spec, samplerate):
     deviation = np.square(freqs[np.newaxis,:] - centroids[:,np.newaxis])
     weighted = np.sum(deviation * spec, axis=-1)
     eps = np.finfo(spec.dtype).eps
-    return np.sqrt(weighted / (spec.sum(axis=-1) + eps))
+    spread = np.sqrt(weighted / (spec.sum(axis=-1) + eps))
+    return spread
 
 
 def crest(spec):
