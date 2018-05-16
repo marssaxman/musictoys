@@ -23,7 +23,7 @@ def centroid(spec, samplerate):
     """
     assert np.all(spec >= 0)
     freqs = np.linspace(0, samplerate / 2.0, spec.shape[-1], endpoint=True)
-    centroids = np.sum(freqs[np.newaxis,:] * spec[:,:], axis=-1)
+    centroids = np.sum(freqs[np.newaxis,...] * spec, axis=-1)
     eps = np.finfo(spec.dtype).eps
     return centroids / (spec.sum(axis=-1) + eps)
 
@@ -52,7 +52,7 @@ def spread(spec, samplerate):
     assert np.all(spec >= 0)
     centroids = centroid(spec, samplerate)
     freqs = np.linspace(0, samplerate / 2.0, spec.shape[-1], endpoint=True)
-    deviation = np.square(freqs[np.newaxis,:] - centroids[:,np.newaxis])
+    deviation = np.square(freqs[np.newaxis,...] - centroids[...,np.newaxis])
     weighted = np.sum(deviation * spec, axis=-1)
     eps = np.finfo(spec.dtype).eps
     spread = np.sqrt(weighted / (spec.sum(axis=-1) + eps))
@@ -76,7 +76,7 @@ def crest(spec):
         factor by which the peak frequency exceeds the average
 
     """
-    magspec = spec / np.max(spec, axis=-1)[:,None]
+    magspec = spec / np.max(spec, axis=-1)[...,None]
     eps = np.finfo(spec.dtype).eps
     return np.max(magspec, axis=-1) / (np.mean(magspec, axis=-1) + eps)
 
@@ -149,8 +149,8 @@ def rolloff(spec, samplerate, fraction=0.9):
     """
     assert 0.0 < fraction < 1.0
     total_energy = np.cumsum(spec, axis=-1)
-    threshold = fraction * total_energy[:,-1]
-    mask = np.where(total_energy >= threshold[:,None], 1, np.nan)
+    threshold = fraction * total_energy[...,-1]
+    mask = np.where(total_energy >= threshold[...,None], 1, np.nan)
     freqs = np.linspace(0, samplerate / 2.0, spec.shape[-1], endpoint=True)
     return np.nanmin(mask * freqs, axis=-1, keepdims=True)
 
@@ -169,6 +169,6 @@ def variance(spec):
         average variance from the mean for each frame
 
     """
-    return np.var(np.abs(spec), axis=-1)
+    return np.var(spec, axis=-1)
 
 
