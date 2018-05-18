@@ -70,11 +70,18 @@ def split_frames(*args, **kwargs):
     return list(iterframes(*args, **kwargs))
 
 
+def hamming(frame_size):
+    # improved hamming window coefficients: the original version used
+    # (0.54, 0.46).
+    i = np.arange(N).astype(np.float)
+    return 0.53836 - (0.46164 * np.cos(np.pi * 2.0 * i / (N-1)))
+
+
 def spectrogram(frames):
     frames = np.asarray(frames)
     frame_size = frames.shape[-1]
     spectra = np.zeros((frames.shape[0], frame_size/2+1), dtype=np.complex64)
-    mask = np.hamming(frame_size)
+    mask = hamming(frame_size)
     for i, clip in enumerate(frames):
         spectra[i,:] = np.fft.rfft(clip * mask)[:]
     return spectra
