@@ -1,6 +1,7 @@
 import numpy as np
 from resample import resample
 
+
 def normalize(signal, samplerate):
     # Whatever we're working with, it should become a numpy array.
     signal = np.asarray(signal)
@@ -34,3 +35,50 @@ def zcr(frames):
     # absolute value yields 1 for zero crossings, 0 for non-crossing
     crossings = np.sum(np.abs(diff), axis=-1) / 2.0
     return (np.float64(crossings) / np.float64(frames.shape[-1]-1.0))
+
+
+def iterframes(signal, size, step=None):
+    if len(signal) == 0:
+        return
+    assert size > 0
+    if step is None:
+        step = size
+    else:
+        assert step > 0
+    # Yield a sequence of views onto the signal sample array.
+    # The first frame will be centered on index zero. We will pad to the left
+    # with zeros until the left edge of the window reaches the sample data.
+    for start in range(-(size/2), 0, step):
+        frame = np.zeros(size)
+        stop = start + size
+        frame[:start] = signal[:stop]
+        yield frame
+    # Most frames will simply be non-copied views on the source array.
+    for start in range(0, len(signal)-size, step):
+        stop = start + size
+        yield signal[start:stop]
+    # Trailing frames will be padded to the right with zeros, until the
+    # center of the frame has reached or passed the end of the array.
+    for start in range(start+step, start+size/2, step):
+        frame = np.zeros(size)
+        view = signal[start:]
+        frame[:len(view)] = view
+        yield frame
+
+
+def split_frames(*args, **kwargs):
+    return list(iterframes(*args, **kwargs))
+
+
+def spectrogram(frames):
+    frames = np.asarray(frames)
+    frame_size = frames.shape[-1]
+    spectra = np.zeros((frames.shape[0], frame_size/2+1), dtype=np.complex64)
+    mask = np.hamming(frame_size)
+    for i, clip in enumerate(frames):
+        spectra[i,:] = np.fft.rfft(clip * mask)[:]
+    return spectra
+
+
+def stft(signal, frame_size=2048, step_size=1024):
+    return spectrogram(split_frames(signal, frame_size, step_size))
