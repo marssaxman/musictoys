@@ -26,3 +26,11 @@ def normalize(signal, samplerate):
         samplerate = 22050
     return signal, samplerate
 
+
+def zcr(frames):
+    count = frames.shape[-1]
+    # reduce each sample to its sign, then compute each difference
+    diff = np.diff(np.sign(frames), axis=-1)
+    # absolute value yields 1 for zero crossings, 0 for non-crossing
+    crossings = np.sum(np.abs(diff), axis=-1) / 2.0
+    return (np.float64(crossings) / np.float64(frames.shape[-1]-1.0))
