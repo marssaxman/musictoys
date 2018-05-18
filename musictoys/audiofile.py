@@ -261,7 +261,8 @@ def _wav_read(file):
     return data, samplerate
 
 
-def _wav_write(file, data, samplerate):
+def _wav_write(file, clip):
+    data, samplerate = clip
     # Generate a WAV header for this audio data and write it all to disk.
     data = np.asarray(data)
     assert data.ndim <= 2
@@ -274,8 +275,8 @@ def _wav_write(file, data, samplerate):
         channels = 1
     # For the time being we'll always write 16-bit integer samples, but in the
     # future it would be nice to retain whatever format we've been provided.
+    wf = wave.open(file, 'wb')
     try:
-        wf = wave.open(path, 'wb')
         wf.setnchannels(channels)
         wf.setsampwidth(2)
         wf.setframerate(int(samplerate))
@@ -299,8 +300,8 @@ def _execpipe(*args):
 def _subproc_read(*args):
     # convert the input file to a temporary wav file
     # read in the contents of the temp and return that
+    fd, temp = tempfile.mkstemp(suffix='.wav')
     try:
-        fd, temp = tempfile.mkstemp(suffix='.wav')
         args = list(args) + [temp]
         _execpipe(*args)
         return _wav_read(temp)
