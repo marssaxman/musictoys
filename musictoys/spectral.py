@@ -18,7 +18,7 @@ def centroid(spec, samplerate):
     Returns
     -------
     centroid : np.ndarray [shape=(frames)]
-        Center-of-mass frequency for each frame
+        Center-of-mass frequency for each frame, in hertz
 
     """
     assert np.all(spec >= 0)
@@ -84,9 +84,9 @@ def crest(spec):
 def entropy(spec):
     """Entropy represents the complexity of a spectrum distribution.
 
-    High entropy is associated with flatter, less distinct spectra, and lower
-    entropy correlates with the peakiness of the distribution, spectra with
-    multiple distinctly prominent frequencies.
+    High entropy is associated with flatter, noisier, less distinct spectra.
+    Lower entropy indicates a peakier distribution and suggests the presence
+    of distinct, tonal frequencies.
 
     Parameters
     ----------
@@ -98,33 +98,31 @@ def entropy(spec):
     entropy : np.ndarray [shape=(frames)]
         noisiness of the spectral distribution
     """
+    prob_dist = spec / np.sum(spec, axis=-1, keepdims=True)
     scale = np.log2(spec.shape[-1])
     eps = np.finfo(spec.dtype).eps
-    return -np.sum(spec * np.log2(spec + eps), axis=-1) / (scale + eps)
+    return -np.sum(spec * np.log2(prob_dist + eps), axis=-1) / (scale + eps)
 
 
-def flatness(spec, power=1.0):
+def flatness(spec):
     """Flatness is the ratio of the geometric to the arithmetic mean.
 
     A harmonic signal tends to have low flatness, while noisy signals are
-    flatter, with a maximum flatness of 1.
+    flatter, with a maximum flatness of 1. This quantity is also known as
+    Wiener entropy.
 
     Parameters
     ----------
     spec : np.ndarray [shape=(frames, bins)]
-        spectrogram
-    power : float > 0
-        Exponent for the magnitude spectrum.
-        Typically power spectrograms are most useful for spectral flatness.
+        spectrogram (typically a power spectrogram)
 
     Returns
     -------
     flatness : np.ndarray [shape=(frames)]
-        a measure in the range 0..1 for each frame
+        tonality measure in the range 0..1 for each frame
     """
-    scaled = spec ** power
-    geometric = np.exp(np.mean(np.log(scaled), axis=-1))
-    arithmetic = np.mean(scaled, axis=-1)
+    geometric = np.exp(np.mean(np.log(spec), axis=-1))
+    arithmetic = np.mean(spec, axis=-1)
     eps = np.finfo(arithmetic.dtype).eps
     return geometric / (arithmetic + eps)
 
