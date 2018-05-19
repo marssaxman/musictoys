@@ -11,11 +11,9 @@ import subprocess, tempfile
 import struct, wave
 import numpy as np
 from collections import namedtuple
+from clip import Clip
 
 # Public API
-
-Clip = namedtuple('Clip', 'data samplerate')
-
 
 class FormatError(Exception):
     def __init__(self, message, format=None):
@@ -40,19 +38,19 @@ def read(file):
 
     Returns
     -------
-    data : numpy.ndarray
+    signal : Clip (subclass of numpy.ndarray)
         If the file is monaural, a one-dimensional array of samples; otherwise
         a two-dimensional array of [channels, samples].
 
-    samplerate : int
-        The sampling frequency of the audio data in Hz.
     """
+    data, sample_rate = _dispatch(file).read(file)
+    return Clip(data, sample_rate), sample_rate
 
-    return Clip(*_dispatch(file).read(file))
 
-
-def write(file, clip):
-    _dispatch(file).write(file, clip)
+def write(file, clip, sample_rate=None):
+    if sample_rate is None:
+        sample_rate = clip.sample_rate
+    _dispatch(file).write(file, clip, sample_rate)
 
 
 # Internal implementation
@@ -112,9 +110,8 @@ def _dispatch(file):
     return _extensions[os.path.splitext(file)[1].lower()]
 
 
-def _fail_write(file, clip):
-    dtype = clip.data.dtype
-    raise FormatError("Cannot write '%s' to %s" % (dtype, file))
+def _fail_write(file, clip, sample_rate):
+    raise FormatError("Cannot write '%s' to %s" % (clip.dtype, file))
 
 
 def _soundfile():
@@ -131,12 +128,8 @@ def _soundfile():
         # conventions, so we'll transpose the output if necessary
         return data.transpose(), samplerate
 
-    def _write(file, clip):
-        data, samplerate = clip
-        soundfile.write(file, data, samplerate)
 
-
-    return _Codec(_formats, _read, _write)
+    return _Codec(_formats, _read, soundfile.write)
 
 
 def _ffmpeg():
@@ -261,8 +254,7 @@ def _wav_read(file):
     return data, samplerate
 
 
-def _wav_write(file, clip):
-    data, samplerate = clip
+def _wav_write(file, data, sample_rate):
     # Generate a WAV header for this audio data and write it all to disk.
     data = np.asarray(data)
     assert data.ndim <= 2
@@ -279,7 +271,7 @@ def _wav_write(file, clip):
     try:
         wf.setnchannels(channels)
         wf.setsampwidth(2)
-        wf.setframerate(int(samplerate))
+        wf.setframerate(int(sample_rate))
         samples = (data * np.iinfo(np.int16).max).astype('<i2')
         wf.writeframesraw(samples.tobytes())
         wf.writeframes('')
