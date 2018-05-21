@@ -7,13 +7,17 @@
 
 
 import os
-import subprocess, tempfile
-import struct, wave
+import subprocess
+import tempfile
+import struct
+import wave
 import numpy as np
 from collections import namedtuple
-from clip import Clip
+import signal
+from signal import Clip
 
 # Public API
+
 
 class FormatError(Exception):
     def __init__(self, message, format=None):
@@ -44,13 +48,12 @@ def read(file):
 
     """
     data, sample_rate = _dispatch(file).read(file)
-    return Clip(data, sample_rate), sample_rate
+    return Clip(data, sample_rate)
 
 
-def write(file, clip, sample_rate=None):
-    if sample_rate is None:
-        sample_rate = clip.sample_rate
-    _dispatch(file).write(file, clip, sample_rate)
+@signal.processor
+def write(file, clip):
+    _dispatch(file).write(file, clip, clip.sample_rate)
 
 
 # Internal implementation
@@ -84,6 +87,8 @@ FORMATS = {n: _Format(n, d, x) for n, d, x in [
 
 _formats = None
 _extensions = None
+
+
 def _init():
     global _formats, _extensions
     if not _formats:
@@ -128,7 +133,6 @@ def _soundfile():
         # conventions, so we'll transpose the output if necessary
         return data.transpose(), samplerate
 
-
     return _Codec(_formats, _read, soundfile.write)
 
 
@@ -156,7 +160,7 @@ def _ffmpeg():
 
     def _read(file):
         return _subproc_read('ffmpeg', '-v', '1', '-y', '-i', file,
-                    '-vn', '-f', 'wav')
+                             '-vn', '-f', 'wav')
 
     return _Codec(_formats, _read, _fail_write)
 
@@ -222,8 +226,9 @@ def _wav_read(file):
         endian = ">%s"
     else:
         raise ValueError()
+
     def unpack(fmt, bytes):
-        return struct.unpack(endian%fmt, bytes)
+        return struct.unpack(endian % fmt, bytes)
     # The rest of the header should tell us how long the WAV data is.
     chunksize, waveid = unpack("I4s", buffer[4:12])
     assert waveid == "WAVE"
@@ -235,7 +240,7 @@ def _wav_read(file):
         off += 8
         if ckid == "fmt ":
             (audioformat, nchannels, samplerate, _, blockalign, samplewidth
-                    ) = unpack("HHIIHH", buffer[off:off+16])
+             ) = unpack("HHIIHH", buffer[off:off+16])
         elif ckid == "data":
             data = buffer[off:off+cksize]
         off += cksize
@@ -244,11 +249,11 @@ def _wav_read(file):
 
     # Reinterpret the bytes we found in some more useful datatype.
     data = data.view(dtype=np.dtype(endian % {
-            # PCM is format 1.
-            1: {8: 'u1', 16: 'i2', 32: 'i4'},
-            # IEEE float is format 3.
-            3: {16: 'f2', 32: 'f4', 64: 'f8'}
-        }[audioformat][samplewidth]))
+        # PCM is format 1.
+        1: {8: 'u1', 16: 'i2', 32: 'i4'},
+        # IEEE float is format 3.
+        3: {16: 'f2', 32: 'f4', 64: 'f8'}
+    }[audioformat][samplewidth]))
     if nchannels > 1:
         data = data.reshape((nchannels, -1))
     return data, samplerate
@@ -300,4 +305,3 @@ def _subproc_read(*args):
     finally:
         os.close(fd)
         os.remove(temp)
-

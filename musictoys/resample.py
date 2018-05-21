@@ -5,12 +5,15 @@ options in descending order of preference, using the best one available.
 """
 
 import numpy as np
+import signal
 
-def resample(data, old_rate, new_rate):
-    # this would be a good place to make sure the data is a numpy array with
-    # the expected [channel, sample] orientation, and that the sampling rates
-    # requested are both reasonable.
-    return _engine(data, old_rate, new_rate)
+
+@signal.processor
+def resample(clip, new_rate):
+    # this would be a good place to make sure that the sampling rate requested
+    # is reasonable.
+    data = _engine(clip, clip.sample_rate, new_rate)
+    return signal.Clip(data, new_rate)
 
 
 def _scikits(data, old_rate, new_rate):
@@ -109,4 +112,3 @@ if not _engine:
 if not _engine:
     import audioop
     _engine = _audioop
-
