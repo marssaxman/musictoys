@@ -52,7 +52,7 @@ def read(file):
 
 
 @signal.processor
-def write(file, clip):
+def write(clip, file):
     _dispatch(file).write(file, clip, clip.sample_rate)
 
 
