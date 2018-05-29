@@ -248,14 +248,14 @@ def _wav_read(file):
             off += 1
 
     # Reinterpret the bytes we found in some more useful datatype.
-    data = data.view(dtype=np.dtype(endian % {
+    data = np.frombuffer(data, dtype=np.dtype(endian % {
         # PCM is format 1.
         1: {8: 'u1', 16: 'i2', 32: 'i4'},
         # IEEE float is format 3.
         3: {16: 'f2', 32: 'f4', 64: 'f8'}
     }[audioformat][samplewidth]))
     if nchannels > 1:
-        data = data.reshape((nchannels, -1))
+        data = data.reshape((nchannels, -1), order='F')
     return data, samplerate
 
 
@@ -278,7 +278,7 @@ def _wav_write(file, data, sample_rate):
         wf.setsampwidth(2)
         wf.setframerate(int(sample_rate))
         samples = (data * np.iinfo(np.int16).max).astype('<i2')
-        wf.writeframesraw(samples.tobytes())
+        wf.writeframesraw(samples.tobytes(order='F'))
         wf.writeframes('')
     finally:
         wf.close()
